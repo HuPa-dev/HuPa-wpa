@@ -4,13 +4,13 @@
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Test</title>
-        <link rel="stylesheet" href="src/style.css" />
+        <link rel="stylesheet" href="../src/style.css" />
         <link rel="stylesheet" href="https://use.typekit.net/itq8knf.css">
     </head>
     <body style="min-height: 100%;">
         
         <div class="haiku-banner">
-            <img src="src/img/haiku-funvisit.png" class="haiku-top">
+            <img src="../src/img/haiku-funvisit.png" class="haiku-top">
         </div>
         
         <section class="guide-body">
@@ -44,26 +44,26 @@
 
 
             <div class="navlinks">
-                <a href="home.html" class="active">
-                    <img src="src/img/icon.svg">
+                <a href="../home/" class="active">
+                    <img src="../src/img/icon.svg">
                     <h2>GUIDE</h2>
                 </a>
-                <a href="map.html">
-                    <img src="src/img/icon.svg">
+                <a href="../map/">
+                    <img src="../src/img/icon.svg">
                     <h2>MAP</h2>
                 </a>
-                <a href="activities.html">
-                    <img src="src/img/icon.svg">
+                <a href="../activities/">
+                    <img src="../src/img/icon.svg">
                     <h2>ACTIVITIES</h2>
                 </a>
-                <a href="more.html">
-                    <img src="src/img/icon.svg">
+                <a href="../more/">
+                    <img src="../src/img/icon.svg">
                     <h2>MORE</h2>
                 </a>
             </div>
             <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js')
+        navigator.serviceWorker.register('../service-worker.js')
           .then(() => console.log('Service Worker registered'))
           .catch(err => console.log('Service Worker failed', err));
       }
