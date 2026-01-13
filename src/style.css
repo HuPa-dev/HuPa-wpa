@@ -55,62 +55,15 @@ button{
   padding-bottom: 0.2em;
   font-size: 1.3rem;
 }
-
-/*----LANDING------*/
-
-.bg-video {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: -1;
-}
-
-.landing-button{
-  position: fixed;
-  bottom: 18vh;
-  left: 0px;
-  right: 0px;
-  display: flex;
-  justify-content: center;
-}
-
-.landing-button a{
+.btn{
+  font-weight: 800;
   padding: 0.4em;
-  padding-top: 0.1em;
-  padding-bottom: 0.1em;
-  font-size: 1.9rem;
-  font-family: "aquavit", sans-serif;
-  font-weight: 1000;
-  letter-spacing: 0.05rem;
-  color: #f1f1f1;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-  background:rgba(225, 225, 225, 0.4);
-  border-style: solid;
-  border-width: 3px;
-  border-radius: 25px;
-  border-color: rgba(225, 225, 225, 0.3);
-  text-decoration: none;
-}
-.landing-button :active{
-  background:rgba(114, 114, 114, 0.4);
+  padding-top: 0.2em;
+  font-size: 1.3rem;
+  font-family: 'aquavit', sans-serif;
+  color: #221811;
 }
 
-/*---------GUIDE-----------*/
-
-.guide-body{
-  height: fit-content;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 15vh;
-  padding-left: 5vw;
-  padding-right: 5vw;
-}
-.guide-body li{
-  margin-left: 4vw;
-}
 
 .haiku-banner{
   position: relative;
@@ -128,22 +81,27 @@ button{
   height: 100%;
   object-fit: contain;
 }
-
-.navigation{
-  background-color: #fff5e4;
-  
-  width: 90vw;
-
-  min-height: 62vh;
-  margin-top: auto;
-  margin-left: auto;
-  margin-right: auto;
+/* Disable text selection */
+.no-select {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
+
+/* Remove mobile tap highlight */
+.no-tap {
+  -webkit-tap-highlight-color: transparent;
+}
+
 
 .navlinks{
   height: fit-content;
   position: fixed;
   bottom: 0px;
+  border-style: solid;
+  border-width: 0px;
+  border-top-width: 2px;
+  border-color: rgb(255, 253, 251);
   
   width: 100%;
   display: grid;
@@ -188,171 +146,13 @@ button{
 .navlinks h2{
   text-align: center;
   font-size: 4vw;
-  margin-bottom: 0rem;
+  margin-bottom: -0.1rem;
 }
 .navlinks img{
-  max-height: 10vw;
-
-}
-
-/*---- ACTIVITIES  ------*/
-.accordion{
-  padding-bottom: 10vh;
-}
-
-.accordion button{
-  font-family: 'aquavit', sans-serif;
-}
-
-.accordion-item {
-  border-bottom: 1px solid #ccc;
-}
-
-.accordion-header {
-  width: 100%;
-  text-align: left;
-  font-size: 1.2rem;
-  font-weight: bold;
-  background: none;
-  border: none;
-  padding: 1rem;
-  cursor: pointer;
-  outline: none;
-}
-
-.accordion-content {
-  overflow: hidden;
-  height: 0;
-  transition: height 0.3s ease;
-  padding: 0 1rem;
-}
-
-/*----   MAP   -----*/
-.map {
-  position: fixed;
-  inset: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  z-index: 0;
-}
-.map-inner {
-  position: relative;
-  width: fit-content;
-}
-
-/* map image = larger than screen */
-.map img {
-  padding-bottom: 10vh;
-  width: fit-content;
-  height: 115vh;
-  display: block;
-}
-
-.popup {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.5);
-  align-items: center;
-  justify-content: center;
-  z-index: 998;
-  pointer-events: auto;
-}
-
-.popup-panel {
-  width: 90vw;
-  height: 70vh;
-  background: #fff;
-  border-radius: 20px;
-  padding: 1rem;
-  position: relative;
+  height: 7vw;
+  width: 7vw;
   margin-left: auto;
   margin-right: auto;
-  margin-top: 3vh;
-  margin-bottom: auto;
-  pointer-events: auto;
-  z-index: 999;
+  margin-bottom: 5%;
 }
 
-.close{
-  display: inline;
-  margin-left: 90%;
-  border-style: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 20%;
-}
-.popup h2{
-  margin-top: -8%;
-}
-
-.hotspot {
-  all:unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: rgb(255, 232, 206);
-  border-style: solid;
-  border-width: 3px;
-  border-color: #e27d43;
-  text-decoration: none;
-  color: #141312;
-  font-family: 'aquavit', sans-serif;
-  font-size: 1.2em;
-}
-.entrance{
-  left: 89%;
-  top: 62.3%;
-}
-.kammi1{
-  left: 83.5%;
-  top: 58%;
-}
-.avokammi{
-  left: 55.2%;
-  top: 56.4%;
-}
-.ajot1{
-  left: 45.2%;
-  top: 46.3%;
-}
-.ajot2{
-  left: 47.6%;
-  top: 37.2%
-}
-.kammi2{
-  left: 58.5%;
-  top: 29.5%;
-}
-.ravintola{
-  left: 53.6%;
-  top: 22.2%;
-}
-.hali-red{
-  left: 77.2%;
-  top: 74.3%;
-  border-color: #ec4b36;
-  font-size: 1.4em;
-  width: 31px;
-  height: 31px;
-}
-.hali-blue{
-  left: 78.7%;
-  top: 65.1%;
-  border-color: #4a5fbd;
-  font-size: 1.4em;
-  width: 31px;
-  height: 31px;
-}
-.hali-green{
-  left: 63.2%;
-  top: 47.8%;
-  border-color: #4db849;
-  font-size: 1.4em;
-  width: 31px;
-  height: 31px;
-}

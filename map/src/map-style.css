@@ -1,0 +1,156 @@
+/*----   MAP   -----*/
+.map {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 0;
+}
+.map-inner {
+  position: relative;
+  width: fit-content;
+}
+
+/* map image = larger than screen */
+.map img {
+  padding-bottom: 8vh;
+  width: fit-content;
+  height: 115vh;
+  display: block;
+}
+
+.popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  align-items: center;
+  justify-content: center;
+  z-index: 998;
+  pointer-events: auto;
+}
+
+.popup-panel {
+  width: 90vw;
+  height: 70vh;
+  background: #fff5e4;
+  border-radius: 20px;
+  padding: 1rem;
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 3vh;
+  margin-bottom: auto;
+  pointer-events: auto;
+  z-index: 999;
+}
+.popup-panel h2{
+  font-size: 1.8em;
+}
+
+.close{
+  display: inline;
+  margin-left: 90%;
+  margin-top: 1%;
+  border-style: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 20%;
+  background-color: transparent;
+}
+.popup h2{
+  margin-top: -12%;
+  margin-left: 1%;
+}
+
+.popup-content{
+  height: 90%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding-top: 0.2em;
+  padding-left: 0.4em;
+  padding-right: 0.4em;
+}
+.popup-text{
+  flex: 1;
+  text-align: left;
+  overflow-y: auto;
+}
+.popup-link{
+  align-self: center;
+  margin-top: auto;
+}
+
+/*----- HOTSPOTS ------*/
+
+.hotspot {
+  all:unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgb(255, 232, 206);
+  border-style: solid;
+  border-width: 3px;
+  border-color: #e27d43;
+  text-decoration: none;
+  color: #141312;
+  font-family: 'aquavit', sans-serif;
+  font-size: 1.2em;
+}
+.entrance{
+  left: 88.7%;
+  top: 62.7%;
+}
+.kammi1{
+  left: 83.3%;
+  top: 58.3%;
+}
+.avokammi{
+  left: 54.8%;
+  top: 57%;
+}
+.ajot1{
+  left: 45%;
+  top: 46.7%;
+}
+.ajot2{
+  left: 47.4%;
+  top: 37.6%
+}
+.kammi2{
+  left: 58.1%;
+  top: 29.5%;
+}
+.ravintola{
+  left: 53.4%;
+  top: 22%;
+}
+.hali-red{
+  left: 76.8%;
+  top: 75.6%;
+  border-color: #ec4b36;
+  font-size: 1.4em;
+  width: 31px;
+  height: 31px;
+}
+.hali-blue{
+  left: 78.4%;
+  top: 66.3%;
+  border-color: #4a5fbd;
+  font-size: 1.4em;
+  width: 31px;
+  height: 31px;
+}
+.hali-green{
+  left: 62.9%;
+  top: 48.5%;
+  border-color: #4db849;
+  font-size: 1.4em;
+  width: 31px;
+  height: 31px;
+}

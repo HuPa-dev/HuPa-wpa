@@ -1,0 +1,36 @@
+/*---- ACTIVITIES  ------*/
+body{
+  background-color: #fff5e4;
+}
+
+.accordion{
+  padding-bottom: 10vh;
+}
+
+.accordion button{
+  font-family: 'aquavit', sans-serif;
+}
+
+.accordion-item {
+  border-bottom: 1px solid #ccc;
+}
+
+.accordion-header {
+  width: 100%;
+  text-align: left;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background: none;
+  border: none;
+  padding: 1rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.accordion-content {
+  overflow: hidden;
+  height: 0;
+  transition: height 0.3s ease;
+  padding: 0 1rem;
+}
+
