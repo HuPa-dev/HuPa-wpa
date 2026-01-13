@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Husky Park</title>
-    <link rel="stylesheet" href="../src/style.css" />
-    <link rel="stylesheet" href="../src/landing-style.css" />
+    <link rel="stylesheet" href="../src/style.css?v=dev1" />
+    <link rel="stylesheet" href="../src/landing-style.css?v=dev1" />
     <link rel="stylesheet" href="https://use.typekit.net/itq8knf.css">
      <!-- Force light mode -->
     <meta name="color-scheme" content="light">
@@ -47,12 +50,5 @@
 </main>
 
     <script type="module" src="../src/main.js"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(() => console.log('Service Worker registered'))
-          .catch(err => console.log('Service Worker failed', err));
-      }
-    </script>
   </body>
 </html>
