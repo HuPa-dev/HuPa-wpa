@@ -15,6 +15,12 @@
     </head>
     <body style="min-height: 100%;">
         
+
+        <div id="page-loader">
+        <div class="spinner"></div>
+        </div>
+
+
         <div class="popup" hidden>
             <div class="popup-panel">
                 <button class="close">×</button>
@@ -91,7 +97,7 @@
                     <img src="../src/img/guide.svg">
                     <h2>GUIDE</h2>
                 </a>
-                <a href="../map/" class="active">
+                <a href="../map/" class="active" onclick="return false;">
                     <img src="../src/img/map.svg" style="width: 8vw; height: 8vw; margin-top: -1vw;">
                     <h2>MAP</h2>
                 </a>
@@ -123,6 +129,7 @@
     }
   });
 </script>
+<script src="../src/loader.js"></script>
 <script src="src/map-dynamic-info.js"></script>
 
 </html>

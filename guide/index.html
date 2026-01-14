@@ -15,6 +15,10 @@
     </head>
     <body style="min-height: 100%;" class="guide-body">
         
+        <div id="page-loader">
+        <div class="spinner"></div>
+        </div>
+
         <div class="haiku-banner">
             <img src="../src/img/haiku-funvisit.png" class="haiku-top">
         </div>
@@ -50,7 +54,7 @@
 
 
             <div class="navlinks">
-                <a href="../guide/" class="active">
+                <a href="../guide/" class="active" onclick="return false;">
                     <img src="../src/img/guide.svg">
                     <h2>GUIDE</h2>
                 </a>
@@ -67,7 +71,9 @@
                     <h2>MORE</h2>
                 </a>
             </div>
-            
+    
+    
+    <script src="../src/loader.js"></script>
     </body>
 
 </html>
