@@ -14,12 +14,12 @@
         <style>
         :root { color-scheme: light; }
         </style>
+        <script defer src="src/activities-accordion.js"></script>
     </head>
     <body style="min-height: 100%;">
         <div id="page-loader">
-            <div class="spinner"></div>
+        <div class="spinner"></div>
         </div>
-        
 
         <h1 style="padding: 0.45em;">ACTIVITIES</h1>
         <div class="accordion">
@@ -70,7 +70,7 @@
                 </a>
             </div>
 
-    <script src="src/activities-accordion.js"></script>
+ 
     <script>
         document.querySelectorAll('[data-article]').forEach(el => {
         fetch(el.dataset.article)
