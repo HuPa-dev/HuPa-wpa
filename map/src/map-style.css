@@ -14,8 +14,8 @@
 /* map image = larger than screen */
 .map img {
   padding-bottom: 8vh;
-  width: fit-content;
-  height: 115vh;
+  width: auto;
+  height: 115dvh;
   display: block;
 }
 
