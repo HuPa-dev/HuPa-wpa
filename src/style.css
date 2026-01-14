@@ -8,7 +8,9 @@
   max-width: 1000px;
   margin-inline: auto;
 }
-
+html {
+  background-color: #fff5e4;
+}
 
 body {
   font-family: "hanken-grotesk",system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
