@@ -54,7 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!header) return;
 
   console.log('[Accordion] Triggering click via hash');
-  header.click();
+  loadContent().then(() => {
+    header.click();
+  });
+
 
   setTimeout(() => {
     console.log('[Accordion] Scrolling into view');
