@@ -69,8 +69,8 @@
   flex-direction: column;
   flex: 1;
   padding-top: 0.2em;
-  padding-left: 0.4em;
-  padding-right: 0.4em;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
 }
 .popup-text{
   flex: 1;

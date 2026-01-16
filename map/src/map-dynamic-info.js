@@ -7,7 +7,7 @@ const link  = popup.querySelector('.popup-link');
 document.querySelectorAll('.hotspot').forEach(btn => {
   btn.addEventListener('click', () => {
     title.textContent = btn.dataset.title;
-    text.textContent  = btn.dataset.text;
+    text.innerHTML  = btn.dataset.text;
 
     if (btn.dataset.link) {
       link.href = btn.dataset.link;

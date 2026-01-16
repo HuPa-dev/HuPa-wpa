@@ -32,5 +32,17 @@ body{
   height: 0;
   transition: height 0.3s ease;
   padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+
 }
 
+.accordion-content img{
+  width: 95%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.accordion-content li{
+  margin-left: 5vw;
+}
