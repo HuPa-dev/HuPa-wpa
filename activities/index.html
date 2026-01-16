@@ -80,6 +80,27 @@
     </script>
     <script src="../src/loader.js"></script>
     <script src="src/activities-accordion.js"></script>
+     <script>
+        document.querySelectorAll('.accordion').forEach(accordion => {
+    accordion.addEventListener('click', () => {
+        const panel = accordion.nextElementSibling;
+        
+        // Reset height to auto after images load
+        const images = panel.querySelectorAll('img');
+        let loadedCount = 0;
+        
+        images.forEach(img => {
+        if (img.complete) loadedCount++;
+        else img.addEventListener('load', () => {
+            loadedCount++;
+            if (loadedCount === images.length) panel.style.height = panel.scrollHeight + 'px';
+        });
+        });
+
+        if (loadedCount === images.length) panel.style.height = panel.scrollHeight + 'px';
+    });
+    });
+    </script>
     </body>
 
 </html>
