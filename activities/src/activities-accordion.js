@@ -3,21 +3,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const headers = document.querySelectorAll('.accordion-header');
 
-  function openWhenReady(header, content, tries = 10) {
-    if (content.scrollHeight > 0) {
-      header.click();
-      return;
-    }
+function openWhenReady(header, content, tries = 10) {
+  if (content.scrollHeight > 0) {
+    header.click();
 
-    if (tries <= 0) {
-      console.warn('[Accordion] content never gained height', content);
-      return;
-    }
+    requestAnimationFrame(() => {
+      content.parentElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    });
 
-    setTimeout(() => {
-      openWhenReady(header, content, tries - 1);
-    }, 100);
+    return;
   }
+
+  if (tries <= 0) {
+    console.warn('[Accordion] content never gained height', content);
+    return;
+  }
+
+  setTimeout(() => {
+    openWhenReady(header, content, tries - 1);
+  }, 100);
+}
 
   headers.forEach((header, index) => {
     header.addEventListener('click', () => {
@@ -52,7 +60,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   openWhenReady(header, item.querySelector('.accordion-content'));
 
-  setTimeout(() => {
-    item.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
+
 });
