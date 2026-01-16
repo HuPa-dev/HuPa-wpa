@@ -30,7 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[Accordion] Opening current', {
           scrollHeight: content.scrollHeight
         });
-        content.style.height = content.scrollHeight + 'px';
+        requestAnimationFrame(() => {
+          content.style.height = content.scrollHeight + 'px';
+        });
       }
     });
   });
