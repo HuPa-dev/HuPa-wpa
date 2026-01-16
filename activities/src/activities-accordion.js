@@ -20,24 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Open from hash
     
-      const hash = window.location.hash.slice(1);
-      if (!hash) return;
+  const hash = window.location.hash.slice(1);
+  if (!hash) return;
 
-      const item = document.getElementById(hash);
-      if (!item) return;
+  const item = document.getElementById(hash);
+  if (!item) return;
 
-      const content = item.querySelector('.accordion-content');
-      if (!content) return;
+  const header = item.querySelector('.accordion-header');
+  if (!header) return;
 
-      document.querySelectorAll('.accordion-content').forEach(c => {
-        c.style.height = c === content ? c.scrollHeight + 'px' : '';
-      });
+  header.click();
 
-      item.classList.add('active');
+  setTimeout(() => {
+    item.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 
-      setTimeout(() => {
-        item.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
   
-
 });
