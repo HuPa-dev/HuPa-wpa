@@ -5,6 +5,7 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   z-index: 0;
+  padding-bottom:1vh;
 }
 .map-inner {
   position: relative;
@@ -123,7 +124,7 @@
   top: 37.6%
 }
 .kammi2{
-  left: 58.1%;
+  left: 59%;
   top: 29.5%;
 }
 .ravintola{
