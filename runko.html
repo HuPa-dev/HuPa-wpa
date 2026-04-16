@@ -144,10 +144,18 @@
 
   .lockscreen{
     background-color: rgba(109, 108, 108, 0.137);
+    width: 8000px;
+    height: 5000px;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 10;
+  }
+  .lockscreen-container{
+    position: absolute;
     width: 100vw;
     height: 100vh;
-    position: absolute;
-    z-index: 10;
+    overflow: hidden;
   }
   #lockscreen {
     display: none;
@@ -659,8 +667,10 @@
 </div>
 
 <div class="panels">
-  <div class="lockscreen" id="lockscreen"></div>
-  <div class="panel panel-rides" id="panel-rides">
+  <div class="lockscreen-container">
+    <div class="lockscreen" id="lockscreen"></div>
+  </div>
+    <div class="panel panel-rides" id="panel-rides">
     <div class="panel-header">
       <span class="panel-title">Ajot</span>
       <div class="panel-accent-bar"></div>
