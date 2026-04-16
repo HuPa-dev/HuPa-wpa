@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #090a0e;
+    --surface2: #0c0f14;
+    --border: #2a3040;
+    --border-bright: #3a4558;
+    --accent-rides: #f58439;
+    --accent-mg: #5557cf;
+    --text: #e2e2ee;
+    --text-dim: #a8add3;
+    --text-dimmer: #9090a3;
+    --red: #f87171;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --radius: 6px;
+    --mono: 'Chivo Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    min-height: 100vh;
+    overflow-x: auto;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100vw;
+  }
+
+  .header-title {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+
+  .date-picker-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .date-nav-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 28px; height: 28px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .date-nav-btn:hover { border-color: var(--border-bright); color: var(--text); }
+
+  
+
+  #date-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 5px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    outline: none;
+  }
+  #date-input:focus { border-color: var(--border-bright); }
+
+  .today-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .today-btn:hover { border-color: var(--border-bright); color: var(--text); }
+
+  .sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dimmer);
+  }
+  .sync-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-dimmer);
+    transition: background 0.3s;
+  }
+  .sync-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .sync-dot.saving { background: var(--yellow); }
+
+  /* LOCKSCREEN */
+  .lock-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 68px; height: 28px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .lock-btn:hover { border-color: var(--border-bright); color: var(--text); }
+
+  #lock-btn.active{
+    background: var(--border);
+  }
+
+  .lockscreen{
+    background-color: rgba(109, 108, 108, 0.137);
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    z-index: 10;
+  }
+  #lockscreen {
+    display: none;
+  }
+  #lockscreen.active {
+    display: block;
+  }
+
+
+  /* ── MAIN LAYOUT ── */
+  .panels {
+    display: flex;
+    gap: 0;
+    min-height: calc(100vh - 53px);
+    flex-direction: row;
+  }
+  @media only screen and (max-width: 1000px){
+    .panels{
+      flex-direction: column;
+    }
+  }
+
+  .panel {
+    flex: 1;
+    min-width: 600px;
+    padding: 20px;
+    border-right: 2px solid var(--border);
+  }
+  .panel:last-child { border-right: none; }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .panel-rides .panel-title { color: var(--accent-rides); }
+  .panel-mg .panel-title { color: var(--accent-mg); }
+
+  .panel-accent-bar {
+    height: 2px;
+    flex: 1;
+    border-radius: 1px;
+  }
+  .panel-rides .panel-accent-bar { background: linear-gradient(to right, var(--accent-rides), transparent); }
+  .panel-mg .panel-accent-bar { background: linear-gradient(to right, var(--accent-mg), transparent); }
+
+  /* ── TABLE ── */
+  .schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .schedule-table thead th {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    padding: 0 8px 10px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .col-time { width: 80px; }
+  .col-length { width: 80px; }
+  .col-pax { width: 130px; }
+  .col-more { width: auto; }
+
+  /* ── TIMESLOT ROWS ── */
+  .timeslot-group {}
+
+  .timeslot-header-row td {
+    padding-top: 10px;
+  }
+
+  .time-cell {
+    vertical-align: top;
+    padding: 0 8px;
+  }
+
+  .time-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    margin-top: 4px;
+  }
+  .time-badge:hover {
+    border-color: var(--border-bright);
+    background: #252b3a;
+  }
+  .time-badge .edit-icon { font-size: 10px; opacity: 0.4; }
+
+  .length-cell {
+    vertical-align: top;
+    padding: 4px 8px 0 8px;
+  }
+
+  .length-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 5px 9px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    margin-top: 4px;
+  }
+  .length-badge:hover { border-color: var(--border-bright); color: var(--text); }
+  .length-badge.has-value { color: var(--text); }
+
+  /* ── TIMESLOT LENGTH COLOUR TINTING ── */
+  .ts-color-500m td { background: rgba(251, 146, 60, 0.08); }
+  .ts-color-500m td:first-child { border-left: 3px solid rgba(251, 146, 60, 0.6); }
+  .ts-color-1km td { background: rgba(74, 222, 128, 0.07); }
+  .ts-color-1km td:first-child { border-left: 3px solid rgba(74, 222, 128, 0.5); }
+  .ts-color-2km td { background: rgba(96, 165, 250, 0.08); }
+  .ts-color-2km td:first-child { border-left: 3px solid rgba(96, 165, 250, 0.55); }
+  .ts-color-5km td { background: rgba(248, 113, 113, 0.08); }
+  .ts-color-5km td:first-child { border-left: 3px solid rgba(248, 113, 113, 0.55); }
+
+  /* Length picker popup */
+  .length-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .length-option {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 8px;
+    border-radius: var(--radius);
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .length-option:hover { border-color: var(--border-bright); color: var(--text); }
+  .length-option.selected { color: #0a0e15; font-weight: 700; }
+  .length-option[data-val="-"] { grid-column: span 3; font-size: 12px; color: var(--text-dimmer); }
+  .length-option[data-val="-"].selected { background: var(--border); color: var(--text); border-color: var(--border-bright); }
+  .length-option[data-val="500m"].selected { background: rgb(251,146,60); border-color: rgb(251,146,60); }
+  .length-option[data-val="1km"].selected  { background: rgb(74,222,128);  border-color: rgb(74,222,128); }
+  .length-option[data-val="2km"].selected  { background: rgb(96,165,250);  border-color: rgb(96,165,250); }
+  .length-option[data-val="5km"].selected  { background: rgb(248,113,113); border-color: rgb(248,113,113); }
+
+  /* ── SUB-ROWS ── */
+  .subrow td {
+    padding: 3px 8px;
+    vertical-align: middle;
+  }
+
+  .subrow:first-of-type td { padding-top: 6px; }
+  .subrow:last-of-type td { padding-bottom: 8px; }
+
+  .pax-cell {}
+  .pax-display {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    min-width: 100px;
+    display: inline-block;
+  }
+  .pax-display:hover { border-color: var(--border-bright); }
+  .pax-display.empty { color: var(--text-dimmer); }
+
+  .more-input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 5px 7px;
+    border-radius: var(--radius);
+    width: 100%;
+    outline: none;
+    transition: all 0.15s;
+  }
+  .more-input:hover { border-color: var(--border); }
+  .more-input:focus { border-color: var(--border-bright); background: var(--surface2); }
+  .more-input::placeholder { color: var(--text-dimmer); }
+
+  .del-subrow-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dimmer);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: all 0.15s;
+    opacity: 0;
+  }
+  .subrow:hover .del-subrow-btn { opacity: 1; }
+  .del-subrow-btn:hover { color: var(--red); background: rgba(248,113,113,0.1); }
+
+  /* ── ADD TIMESLOT ROW ── */
+  .add-timeslot-row td {
+    padding: 12px 8px 4px 8px;
+  }
+
+  .add-timeslot-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-dimmer);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .add-timeslot-btn:hover { border-color: var(--border-bright); color: var(--text); }
+
+  /* ── SEPARATOR ── */
+  .timeslot-separator {
+    height: 1px;
+    background: var(--border);
+    margin: 0;
+    opacity: 0.5;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dimmer);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 2;
+  }
+
+  /* ── POPUP OVERLAY ── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .overlay.visible { opacity: 1; }
+
+  .popup {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    padding: 24px;
+    min-width: 300px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    transform: translateY(8px);
+    transition: transform 0.15s;
+  }
+  .overlay.visible .popup { transform: translateY(0); }
+
+  .popup-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .popup-field {
+    margin-bottom: 14px;
+  }
+
+  .popup-label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dimmer);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .popup-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .popup-input:focus { border-color: var(--border-bright); }
+
+  /* Timeslot popup rows list */
+  .slot-rows-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .slot-row-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 7px 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .slot-row-del {
+    background: transparent;
+    border: none;
+    color: var(--text-dimmer);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .slot-row-del:hover { color: var(--red); }
+
+  .add-row-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 7px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.15s;
+    margin-bottom: 16px;
+  }
+  .add-row-btn:hover { border-color: var(--border-bright); color: var(--text); }
+
+  .popup-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent-rides);
+    color: #0a0e15;
+    font-weight: 600;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary.mg { background: var(--accent-mg); }
+  .btn-secondary {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+  .btn-secondary:hover { border-color: var(--border-bright); color: var(--text); }
+  .btn-danger {
+    background: transparent;
+    border-color: var(--red);
+    color: var(--red);
+    margin-right: auto;
+  }
+  .btn-danger:hover { background: rgba(248,113,113,0.1); }
+
+  /* PAX popup */
+  .pax-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .pax-total {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 8px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+  }
+  .pax-total span { color: var(--text); font-weight: 600; }
+
+  .num-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    width: 100%;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .num-input::-webkit-outer-spin-button,
+  .num-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .num-input:focus { border-color: var(--border-bright); }
+
+  /* Loading */
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 40px;
+    color: var(--text-dimmer);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text-dim);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">PÄIVÄRUNKO</div>
+  <button class="lock-btn" id="lock-btn">LUKKO</button>
+  <div class="date-picker-wrap">
+    <button class="date-nav-btn" id="prev-day">&#8249;</button>
+    <input type="date" id="date-input">
+    <button class="date-nav-btn" id="next-day">&#8250;</button>
+    <button class="today-btn" id="today-btn">TÄNÄÄN</button>
+  </div>
+  <div class="sync-indicator">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">yhdistetään</span>
+  </div>
+</div>
+
+<div class="panels">
+  <div class="lockscreen" id="lockscreen"></div>
+  <div class="panel panel-rides" id="panel-rides">
+    <div class="panel-header">
+      <span class="panel-title">Ajot</span>
+      <div class="panel-accent-bar"></div>
+    </div>
+    <div id="rides-content"><div class="loading-state"><div class="spinner"></div>lataa</div></div>
+  </div>
+  <div class="panel panel-mg" id="panel-mg">
+    <div class="panel-header">
+      <span class="panel-title">Meet &amp; Greet</span>
+      <div class="panel-accent-bar"></div>
+    </div>
+    <div id="mg-content"><div class="loading-state"><div class="spinner"></div>lataa</div></div>
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="popup" id="popup"></div>
+</div>
+
+<script type="module">
+// ── FIREBASE ──────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot, setDoc, getDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDHAHeZvXIx1g2PAyNj5S5n-UU_ogdw_78",
+  authDomain: "day-schedule-d18e1.firebaseapp.com",
+  projectId: "day-schedule-d18e1",
+  storageBucket: "day-schedule-d18e1.firebasestorage.app",
+  messagingSenderId: "940587279805",
+  appId: "1:940587279805:web:06d7d5b9f77783166fded4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── MEET & GREET TEMPLATE ─────────────────────────────────
+// Edit this array to change the default M&G timeslots for new days.
+// Only affects days that haven't been opened yet.
+const MG_TEMPLATE_TIMES = [
+  "10:00", "10:20", "10:40", "11:00", "11:20", "11:40", "13:00", "13:20", "13:40", "14:00", "14:20", "15:00", "15:20", "15:40",
+];
+
+// ── STATE ─────────────────────────────────────────────────
+let currentDate = todayStr();
+let ridesData = null;   // { timeslots: [...] }
+let mgData = null;
+let unsubRides = null;
+let unsubMg = null;
+let saveTimer = null;
+
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+
+function makeid() {
+  return Math.random().toString(36).slice(2, 9);
+}
+
+function emptyDayData(panel) {
+  if (panel === 'mg') {
+    return {
+      timeslots: MG_TEMPLATE_TIMES.map(t => ({
+        id: makeid(),
+        time: t,
+        length: '',
+        rows: [{ id: makeid(), pax: [0,0,0,0], more: '' }]
+      }))
+    };
+  }
+  return { timeslots: [] };
+}
+
+// ── SYNC INDICATOR ────────────────────────────────────────
+const syncDot = document.getElementById('sync-dot');
+const syncLabel = document.getElementById('sync-label');
+
+function setSyncState(state) {
+  syncDot.className = 'sync-dot' + (state === 'live' ? ' active' : state === 'saving' ? ' saving' : '');
+  syncLabel.textContent = state === 'live' ? 'live' : state === 'tallentaa' ? 'tallentaa' : 'päivittää';
+}
+
+// LOCKSCREEN
+
+document.getElementById('lock-btn').addEventListener('click', () => {
+  document.getElementById('lockscreen').classList.toggle('active')
+  document.getElementById('lock-btn').classList.toggle('active')
+})
+
+// ── DATE PICKER ───────────────────────────────────────────
+const dateInput = document.getElementById('date-input');
+dateInput.value = currentDate;
+
+dateInput.addEventListener('change', () => {
+  currentDate = dateInput.value;
+  loadDay();
+});
+
+document.getElementById('today-btn').addEventListener('click', () => {
+  currentDate = todayStr();
+  dateInput.value = currentDate;
+  loadDay();
+});
+
+document.getElementById('prev-day').addEventListener('click', () => {
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  currentDate = d.toISOString().slice(0, 10);
+  dateInput.value = currentDate;
+  loadDay();
+});
+
+document.getElementById('next-day').addEventListener('click', () => {
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  currentDate = d.toISOString().slice(0, 10);
+  dateInput.value = currentDate;
+  loadDay();
+});
+
+// ── LOAD DAY ──────────────────────────────────────────────
+async function loadDay() {
+  setSyncState('connecting');
+
+  // unsubscribe old listeners
+  if (unsubRides) { unsubRides(); unsubRides = null; }
+  if (unsubMg) { unsubMg(); unsubMg = null; }
+
+  ridesData = null;
+  mgData = null;
+
+  document.getElementById('rides-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>loading</div>';
+  document.getElementById('mg-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>loading</div>';
+
+  const ridesRef = doc(db, 'schedules', currentDate + '_rides');
+  const mgRef    = doc(db, 'schedules', currentDate + '_mg');
+
+  // Init docs if they don't exist
+  const [ridesSnap, mgSnap] = await Promise.all([getDoc(ridesRef), getDoc(mgRef)]);
+
+  if (!ridesSnap.exists()) {
+    await setDoc(ridesRef, emptyDayData('rides'));
+  }
+  if (!mgSnap.exists()) {
+    await setDoc(mgRef, emptyDayData('mg'));
+  }
+
+  // Subscribe real-time
+  unsubRides = onSnapshot(ridesRef, snap => {
+    ridesData = snap.data();
+    renderPanel('rides', ridesData);
+    setSyncState('live');
+  });
+
+  unsubMg = onSnapshot(mgRef, snap => {
+    mgData = snap.data();
+    renderPanel('mg', mgData);
+    setSyncState('live');
+  });
+}
+
+// ── SAVE (debounced) ──────────────────────────────────────
+function save(panel, time) {
+  setSyncState('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const ref = doc(db, 'schedules', currentDate + '_' + panel);
+    const data = panel === 'rides' ? ridesData : mgData;
+    await setDoc(ref, data);
+    setSyncState('live');
+  }, time);
+}
+
+// ── RENDER PANEL ──────────────────────────────────────────
+function renderPanel(panel, data) {
+  const container = document.getElementById(panel + '-content');
+  const accent = panel === 'rides' ? 'rides' : 'mg';
+
+  const sorted = [...(data.timeslots || [])].sort((a, b) => a.time.localeCompare(b.time));
+
+  let html = `
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th class="col-time">Ajat</th>
+          <th class="col-length">Pituus</th>
+          <th class="col-pax">PAX</th>
+          <th class="col-more">Lisätietoa</th>
+          <th style="width:30px"></th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  if (sorted.length === 0) {
+    html += `<tr><td colspan="5"><div class="empty-state">No timeslots yet.<br>Click + to add one.</div></td></tr>`;
+  }
+
+  sorted.forEach((ts, idx) => {
+    const rows = ts.rows || [];
+    const lenVal = ts.length || '';
+    const colorClass = lengthColorClass(lenVal);
+    const badgeLabel = lenVal && lenVal !== '-' ? lenVal : '<span style="opacity:0.35">—</span>';
+
+    html += `<tr class="timeslot-header-row ${colorClass}" data-tsid="${ts.id}">`;
+    html += `<td class="time-cell" rowspan="${Math.max(rows.length, 1) + 1}">
+      <div class="time-badge" data-action="edit-ts" data-panel="${panel}" data-tsid="${ts.id}">
+        ${ts.time} <span class="edit-icon">✎</span>
+      </div>
+    </td>`;
+    html += `<td class="length-cell" rowspan="${Math.max(rows.length, 1) + 1}">
+      <div class="length-badge ${lenVal && lenVal !== '-' ? 'has-value' : ''}"
+        data-action="edit-length" data-panel="${panel}" data-tsid="${ts.id}">
+        ${badgeLabel}
+      </div>
+    </td>`;
+    html += `<td colspan="3" style="padding:0;height:0;border:none;"></td>`;
+    html += `</tr>`;
+
+    if (rows.length === 0) {
+      html += `<tr class="subrow ${colorClass}"><td class="pax-cell"><span class="pax-display empty">—</span></td><td><input class="more-input" placeholder="lisätietoa..." value=""></td><td></td></tr>`;
+    } else {
+      rows.forEach((row, ri) => {
+        const paxStr = paxDisplay(row.pax);
+        const isEmpty = row.pax.every(v => v === 0);
+        html += `<tr class="subrow ${colorClass}" data-tsid="${ts.id}" data-rowid="${row.id}">
+          <td class="pax-cell">
+            <span class="pax-display ${isEmpty ? 'empty' : ''}"
+              data-action="edit-pax" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">
+              ${isEmpty ? '·+·+·+·' : paxStr}
+            </span>
+          </td>
+          <td>
+            <input class="more-input" placeholder="lisätietoa..."
+              value="${esc(row.more || '')}"
+              data-action="edit-more" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">
+          </td>
+         <!-- <td>
+            <button class="del-subrow-btn" data-action="del-row"
+              data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">✕</button>
+          </td> -->
+        </tr>`;
+      });
+    }
+
+    if (idx < sorted.length - 1) {
+      html += `<tr><td colspan="5" style="padding:0"><div class="timeslot-separator"></div></td></tr>`;
+    }
+  });
+
+  html += `<tr class="add-timeslot-row"><td colspan="5">
+    <button class="add-timeslot-btn" data-action="add-ts" data-panel="${panel}">
+      <span style="font-size:16px;line-height:1">+</span> Lisää aika
+    </button>
+  </td></tr>`;
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+
+  // Attach events
+  container.querySelectorAll('[data-action]').forEach(el => {
+    const action = el.dataset.action;
+    if (action === 'edit-ts') {
+      el.addEventListener('click', () => openEditTimeslotPopup(el.dataset.panel, el.dataset.tsid));
+    } else if (action === 'add-ts') {
+      el.addEventListener('click', () => openAddTimeslotPopup(el.dataset.panel));
+    } else if (action === 'edit-pax') {
+      el.addEventListener('click', () => openPaxPopup(el.dataset.panel, el.dataset.tsid, el.dataset.rowid));
+    } else if (action === 'edit-length') {
+      el.addEventListener('click', () => openLengthPopup(el.dataset.panel, el.dataset.tsid));
+    } else if (action === 'edit-more') {
+      el.addEventListener('input', e => {
+        const row = getRow(el.dataset.panel, el.dataset.tsid, el.dataset.rowid);
+        if (row) { row.more = e.target.value; save(el.dataset.panel, 2000); }
+      });
+    } else if (action === 'del-row') {
+      el.addEventListener('click', () => deleteRow(el.dataset.panel, el.dataset.tsid, el.dataset.rowid));
+    }
+  });
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function paxDisplay(pax) {
+  return (pax || [0,0,0,0]).join('+');
+}
+
+function getData(panel) { return panel === 'rides' ? ridesData : mgData; }
+
+function getTimeslot(panel, tsid) {
+  const d = getData(panel);
+  return d && d.timeslots ? d.timeslots.find(t => t.id === tsid) : null;
+}
+
+function getRow(panel, tsid, rowid) {
+  const ts = getTimeslot(panel, tsid);
+  return ts && ts.rows ? ts.rows.find(r => r.id === rowid) : null;
+}
+
+function deleteRow(panel, tsid, rowid) {
+  const ts = getTimeslot(panel, tsid);
+  if (!ts) return;
+  ts.rows = ts.rows.filter(r => r.id !== rowid);
+  save(panel, 100);
+}
+
+// ── POPUP SYSTEM ──────────────────────────────────────────
+const overlay = document.getElementById('overlay');
+const popup   = document.getElementById('popup');
+
+function openOverlay(html) {
+  popup.innerHTML = html;
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => overlay.classList.add('visible'));
+}
+
+function closeOverlay() {
+  overlay.classList.remove('visible');
+  setTimeout(() => { overlay.style.display = 'none'; popup.innerHTML = ''; }, 150);
+}
+
+overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
+
+// ── ADD TIMESLOT POPUP ────────────────────────────────────
+function openAddTimeslotPopup(panel) {
+  const isMg = panel === 'mg';
+  const accentClass = isMg ? 'mg' : '';
+
+  openOverlay(`
+    <div class="popup-title">Uusi aika — ${isMg ? 'Meet & Greet' : 'Ajot'}</div>
+    <div class="popup-field">
+      <label class="popup-label">Aloitusaika</label>
+      <input class="popup-input" id="new-time" type="time" value="09:00">
+    </div>
+    <div class="popup-label" style="margin-bottom:8px">Slotit</div>
+    <div class="slot-rows-list" id="new-rows-list"></div>
+    <button class="add-row-btn" id="add-new-row">+ Lisää slotti</button>
+    <div class="popup-actions">
+      <button class="btn btn-secondary" id="popup-cancel">Peruuta</button>
+      <button class="btn btn-primary ${accentClass}" id="popup-confirm">Lisää aika</button>
+    </div>
+  `);
+
+  let tempRows = [];
+
+  function renderRows() {
+    const list = document.getElementById('new-rows-list');
+    if (tempRows.length === 0) {
+      list.innerHTML = '<div style="color:var(--text-dimmer);font-family:var(--mono);font-size:11px;padding:4px 0">Ei slotteja vielä</div>';
+      return;
+    }
+    list.innerHTML = tempRows.map((r, i) => `
+      <div class="slot-row-item">
+        <span>Row ${i + 1}</span>
+        <button class="slot-row-del" data-i="${i}">✕</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.slot-row-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tempRows.splice(parseInt(btn.dataset.i), 1);
+        renderRows();
+      });
+    });
+  }
+
+  renderRows();
+
+  document.getElementById('add-new-row').addEventListener('click', () => {
+    tempRows.push({ id: makeid(), pax: [0,0,0,0], more: '' });
+    renderRows();
+  });
+
+  document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
+
+  document.getElementById('popup-confirm').addEventListener('click', () => {
+    const time = document.getElementById('new-time').value;
+    if (!time) return;
+    const d = getData(panel);
+    d.timeslots.push({ id: makeid(), time, length: '', rows: tempRows });
+    save(panel, 100);
+    closeOverlay();
+  });
+}
+
+// ── EDIT TIMESLOT POPUP ───────────────────────────────────
+function openEditTimeslotPopup(panel, tsid) {
+  const ts = getTimeslot(panel, tsid);
+  if (!ts) return;
+  const isMg = panel === 'mg';
+  const accentClass = isMg ? 'mg' : '';
+
+  openOverlay(`
+    <div class="popup-title">Muokkaa aikaa — ${ts.time}</div>
+    <div class="popup-field">
+      <label class="popup-label">Aloitusaika</label>
+      <input class="popup-input" id="edit-time" type="time" value="${ts.time}">
+    </div>
+    <div class="popup-label" style="margin-bottom:8px">Slotit</div>
+    <div class="slot-rows-list" id="edit-rows-list"></div>
+    <button class="add-row-btn" id="add-edit-row">+ Lisää slotti</button>
+    <div class="popup-actions">
+      <button class="btn btn-danger" id="popup-delete">Poista aika</button>
+      <button class="btn btn-secondary" id="popup-cancel">Peruuta</button>
+      <button class="btn btn-primary ${accentClass}" id="popup-confirm">Tallenna</button>
+    </div>
+  `);
+
+  // Work on a copy of rows so cancel works
+  let tempRows = ts.rows.map(r => ({ ...r }));
+
+  function renderRows() {
+    const list = document.getElementById('edit-rows-list');
+    if (tempRows.length === 0) {
+      list.innerHTML = '<div style="color:var(--text-dimmer);font-family:var(--mono);font-size:11px;padding:4px 0">Ei slotteja</div>';
+      return;
+    }
+    list.innerHTML = tempRows.map((r, i) => `
+      <div class="slot-row-item">
+        <span>Row ${i + 1} <span style="color:var(--text-dimmer)">${paxDisplay(r.pax)}</span></span>
+        <button class="slot-row-del" data-i="${i}">✕</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.slot-row-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tempRows.splice(parseInt(btn.dataset.i), 1);
+        renderRows();
+      });
+    });
+  }
+
+  renderRows();
+
+  document.getElementById('add-edit-row').addEventListener('click', () => {
+    tempRows.push({ id: makeid(), pax: [0,0,0,0], more: '' });
+    renderRows();
+  });
+
+  document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
+
+  document.getElementById('popup-delete').addEventListener('click', () => {
+    if (!confirm(`Poista ${ts.time} aika ja sen kaikki slotit?`)) return;
+    const d = getData(panel);
+    d.timeslots = d.timeslots.filter(t => t.id !== tsid);
+    save(panel, 100);
+    closeOverlay();
+  });
+
+  document.getElementById('popup-confirm').addEventListener('click', () => {
+    const newTime = document.getElementById('edit-time').value;
+    ts.time = newTime;
+    ts.rows = tempRows;
+    save(panel, 100);
+    closeOverlay();
+  });
+}
+
+// ── PAX POPUP ─────────────────────────────────────────────
+function openPaxPopup(panel, tsid, rowid) {
+  const row = getRow(panel, tsid, rowid);
+  if (!row) return;
+  const isMg = panel === 'mg';
+  const accentClass = isMg ? 'mg' : '';
+  const pax = [...(row.pax || [0,0,0,0])];
+
+  openOverlay(`
+    <div class="popup-title">PAX</div>
+    <div class="pax-grid">
+      <div class="popup-field">
+        <label class="popup-label">Aikuiset</label>
+        <input class="num-input" id="pax-0" type="number" min="0" value="${pax[0]}">
+      </div>
+      <div class="popup-field">
+        <label class="popup-label">Lapset</label>
+        <input class="num-input" id="pax-1" type="number" min="0" value="${pax[1]}">
+      </div>
+      <div class="popup-field">
+        <label class="popup-label">Ilmaiset aikuiset</label>
+        <input class="num-input" id="pax-2" type="number" min="0" value="${pax[2]}">
+      </div>
+      <div class="popup-field">
+        <label class="popup-label">Ilmaiset lapset</label>
+        <input class="num-input" id="pax-3" type="number" min="0" value="${pax[3]}">
+      </div>
+    </div>
+    <div class="pax-total">Total: <span id="pax-total-val">${pax.reduce((a,b)=>a+b,0)}</span></div>
+    <div class="popup-actions">
+      <button class="btn btn-secondary" id="popup-cancel">Peruuta</button>
+      <button class="btn btn-primary ${accentClass}" id="popup-confirm">Tallenna</button>
+    </div>
+  `);
+
+  function updateTotal() {
+    const total = [0,1,2,3].reduce((s,i) => s + (parseInt(document.getElementById('pax-'+i).value)||0), 0);
+    document.getElementById('pax-total-val').textContent = total;
+  }
+
+  [0,1,2,3].forEach(i => {
+    document.getElementById('pax-'+i).addEventListener('input', updateTotal);
+  });
+
+  document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
+
+  document.getElementById('popup-confirm').addEventListener('click', () => {
+    row.pax = [0,1,2,3].map(i => parseInt(document.getElementById('pax-'+i).value) || 0);
+    save(panel, 100);
+    closeOverlay();
+  });
+
+  // Focus first input
+  setTimeout(() => document.getElementById('pax-0').select(), 50);
+}
+
+// ── LENGTH COLOUR HELPER ──────────────────────────────────
+function lengthColorClass(val) {
+  if (val === '500m') return 'ts-color-500m';
+  if (val === '1km')  return 'ts-color-1km';
+  if (val === '2km')  return 'ts-color-2km';
+  if (val === '5km')  return 'ts-color-5km';
+  return '';
+}
+
+// ── LENGTH PICKER POPUP ───────────────────────────────────
+function openLengthPopup(panel, tsid) {
+  const ts = getTimeslot(panel, tsid);
+  if (!ts) return;
+  const isMg = panel === 'mg';
+  const current = ts.length || '';
+  const options = ['-', '500m', '1km', '2km', '5km'];
+
+  openOverlay(`
+    <div class="popup-title">Pituus — ${ts.time}</div>
+    <div class="length-options">
+      ${options.map(v => `
+        <div class="length-option ${current === v || (v === '-' && !current) ? 'selected' : ''}" data-val="${v}">
+          ${v === '-' ? '— ei pituutta' : v}
+        </div>
+      `).join('')}
+    </div>
+    <div class="popup-actions">
+      <button class="btn btn-secondary" id="popup-cancel">Peruuta</button>
+    </div>
+  `);
+
+  document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
+
+  popup.querySelectorAll('.length-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const val = opt.dataset.val;
+      ts.length = val === '-' ? '' : val;
+      save(panel, 100);
+      closeOverlay();
+    });
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────
+loadDay();
+</script>
+</body>
+</html>
