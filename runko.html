@@ -370,7 +370,7 @@
   }
   .more-input:hover { border-color: var(--border); }
   .more-input:focus { border-color: var(--border-bright); background: var(--surface2); }
-  .more-input::placeholder { color: var(--text-dimmer); }
+  .more-input::placeholder { color: var(--border-bright); }
 
   .del-subrow-btn {
     background: transparent;
@@ -851,7 +851,7 @@ function renderPanel(panel, data) {
     <table class="schedule-table">
       <thead>
         <tr>
-          <th class="col-time">Ajat</th>
+          <th class="col-time">Aika</th>
           <th class="col-length">Pituus</th>
           <th class="col-pax">PAX</th>
           <th class="col-more">Lisätietoa</th>
@@ -862,7 +862,7 @@ function renderPanel(panel, data) {
   `;
 
   if (sorted.length === 0) {
-    html += `<tr><td colspan="5"><div class="empty-state">No timeslots yet.<br>Click + to add one.</div></td></tr>`;
+    html += `<tr><td colspan="5"><div class="empty-state">Ei aikoja vielä.<br>Klikkaa + ajan lisäämiseksi.</div></td></tr>`;
   }
 
   sorted.forEach((ts, idx) => {
@@ -887,7 +887,7 @@ function renderPanel(panel, data) {
     html += `</tr>`;
 
     if (rows.length === 0) {
-      html += `<tr class="subrow ${colorClass}"><td class="pax-cell"><span class="pax-display empty">—</span></td><td><input class="more-input" placeholder="lisätietoa..." value=""></td><td></td></tr>`;
+      html += `<tr class="subrow ${colorClass}"><td class="pax-cell"><span class="pax-display empty">—</span></td><td><input class="more-input" placeholder="..." value=""></td><td></td></tr>`;
     } else {
       rows.forEach((row, ri) => {
         const paxStr = paxDisplay(row.pax);
@@ -900,7 +900,7 @@ function renderPanel(panel, data) {
             </span>
           </td>
           <td>
-            <input class="more-input" placeholder="lisätietoa..."
+            <input class="more-input" placeholder="..."
               value="${esc(row.more || '')}"
               data-action="edit-more" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">
           </td>
@@ -1090,7 +1090,7 @@ function openEditTimeslotPopup(panel, tsid) {
     }
     list.innerHTML = tempRows.map((r, i) => `
       <div class="slot-row-item">
-        <span>Row ${i + 1} <span style="color:var(--text-dimmer)">${paxDisplay(r.pax)}</span></span>
+        <span>Slotti ${i + 1} <span style="color:var(--text-dimmer)">${paxDisplay(r.pax)}</span></span>
         <button class="slot-row-del" data-i="${i}">✕</button>
       </div>
     `).join('');
