@@ -687,7 +687,7 @@
 <script type="module">
 // ── FIREBASE ──────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot, setDoc, getDoc }
+import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -828,21 +828,115 @@ async function loadDay() {
   });
 }
 
-// ── SAVE (debounced) ──────────────────────────────────────
-function save(panel, time) {
+// ── SAVE — field-level writes to avoid overwriting other users ────────────────
+// Each save targets only the exact Firestore field that changed,
+// so two users editing different rows never clobber each other.
+
+const saveTimers = {};
+
+function saveField(panel, fieldPath, value, debounceMs = 300) {
+  const timerKey = panel + '::' + fieldPath;
   setSyncState('saving');
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    const ref = doc(db, 'schedules', currentDate + '_' + panel);
-    const data = panel === 'rides' ? ridesData : mgData;
-    await setDoc(ref, data);
-    setSyncState('live');
-  }, time);
+  clearTimeout(saveTimers[timerKey]);
+  saveTimers[timerKey] = setTimeout(async () => {
+    try {
+      const ref = doc(db, 'schedules', currentDate + '_' + panel);
+      await updateDoc(ref, { [fieldPath]: value });
+      setSyncState('live');
+    } catch (e) {
+      console.error('saveField failed', fieldPath, e);
+      setSyncState('live');
+    }
+  }, debounceMs);
+}
+
+// Saves the entire timeslots array for structural changes
+// (add/delete timeslot, add/delete row, reorder).
+// Still uses a short debounce so rapid clicks batch together.
+let structuralTimers = {};
+function saveStructure(panel, debounceMs = 100) {
+  setSyncState('saving');
+  clearTimeout(structuralTimers[panel]);
+  structuralTimers[panel] = setTimeout(async () => {
+    try {
+      const ref = doc(db, 'schedules', currentDate + '_' + panel);
+      const data = panel === 'rides' ? ridesData : mgData;
+      await updateDoc(ref, { timeslots: data.timeslots });
+      setSyncState('live');
+    } catch (e) {
+      console.error('saveStructure failed', e);
+      setSyncState('live');
+    }
+  }, debounceMs);
+}
+
+// Helper: find the index of a timeslot in the local data array
+function tsIndex(panel, tsid) {
+  const d = getData(panel);
+  return (d.timeslots || []).findIndex(t => t.id === tsid);
+}
+
+// Helper: find the index of a row inside a timeslot
+function rowIndex(panel, tsid, rowid) {
+  const ts = getTimeslot(panel, tsid);
+  return ts ? (ts.rows || []).findIndex(r => r.id === rowid) : -1;
+}
+
+// Save only the pax array for a specific row
+function savePax(panel, tsid, rowid) {
+  const ti = tsIndex(panel, tsid);
+  const ri = rowIndex(panel, tsid, rowid);
+  if (ti === -1 || ri === -1) return;
+  const row = getRow(panel, tsid, rowid);
+  saveField(panel, `timeslots.${ti}.rows.${ri}.pax`, row.pax, 0);
+}
+
+// Save only the "more" text for a specific row
+function saveMore(panel, tsid, rowid) {
+  const ti = tsIndex(panel, tsid);
+  const ri = rowIndex(panel, tsid, rowid);
+  if (ti === -1 || ri === -1) return;
+  const row = getRow(panel, tsid, rowid);
+  saveField(panel, `timeslots.${ti}.rows.${ri}.more`, row.more || '', 1500);
+}
+
+// Save only the length badge for a timeslot
+function saveLength(panel, tsid) {
+  const ti = tsIndex(panel, tsid);
+  if (ti === -1) return;
+  const ts = getTimeslot(panel, tsid);
+  saveField(panel, `timeslots.${ti}.length`, ts.length || '', 0);
+}
+
+// Save only the time value for a timeslot
+function saveTime(panel, tsid) {
+  const ti = tsIndex(panel, tsid);
+  if (ti === -1) return;
+  const ts = getTimeslot(panel, tsid);
+  saveField(panel, `timeslots.${ti}.time`, ts.time, 0);
+}
+
+// Fallback: kept for any remaining call-sites (should not normally be used)
+function save(panel, time) {
+  saveStructure(panel, time);
 }
 
 // ── RENDER PANEL ──────────────────────────────────────────
 function renderPanel(panel, data) {
   const container = document.getElementById(panel + '-content');
+
+  // ── Remember which inputs are focused or have unsaved local edits ──
+  // so we don't clobber someone mid-type when a remote snapshot arrives.
+  const activeInputs = {};
+  container.querySelectorAll('input.more-input[data-action="edit-more"]').forEach(el => {
+    const key = `${el.dataset.tsid}::${el.dataset.rowid}`;
+    // Track if this input is focused OR has a value different from what Firebase has
+    const row = getRow(panel, el.dataset.tsid, el.dataset.rowid);
+    const remoteVal = row ? (row.more || '') : null;
+    if (document.activeElement === el || (remoteVal !== null && el.value !== remoteVal)) {
+      activeInputs[key] = el.value;
+    }
+  });
   const accent = panel === 'rides' ? 'rides' : 'mg';
 
   const sorted = [...(data.timeslots || [])].sort((a, b) => a.time.localeCompare(b.time));
@@ -926,6 +1020,16 @@ function renderPanel(panel, data) {
   html += '</tbody></table>';
   container.innerHTML = html;
 
+  // ── Restore values for inputs that were active before re-render ──
+  if (Object.keys(activeInputs).length > 0) {
+    container.querySelectorAll('input.more-input[data-action="edit-more"]').forEach(el => {
+      const key = `${el.dataset.tsid}::${el.dataset.rowid}`;
+      if (key in activeInputs) {
+        el.value = activeInputs[key];
+      }
+    });
+  }
+
   // Attach events
   container.querySelectorAll('[data-action]').forEach(el => {
     const action = el.dataset.action;
@@ -940,7 +1044,7 @@ function renderPanel(panel, data) {
     } else if (action === 'edit-more') {
       el.addEventListener('input', e => {
         const row = getRow(el.dataset.panel, el.dataset.tsid, el.dataset.rowid);
-        if (row) { row.more = e.target.value; save(el.dataset.panel, 2000); }
+        if (row) { row.more = e.target.value; saveMore(el.dataset.panel, el.dataset.tsid, el.dataset.rowid); }
       });
     } else if (action === 'del-row') {
       el.addEventListener('click', () => deleteRow(el.dataset.panel, el.dataset.tsid, el.dataset.rowid));
@@ -973,7 +1077,7 @@ function deleteRow(panel, tsid, rowid) {
   const ts = getTimeslot(panel, tsid);
   if (!ts) return;
   ts.rows = ts.rows.filter(r => r.id !== rowid);
-  save(panel, 100);
+  saveStructure(panel, 100);
 }
 
 // ── POPUP SYSTEM ──────────────────────────────────────────
@@ -1051,7 +1155,7 @@ function openAddTimeslotPopup(panel) {
     if (!time) return;
     const d = getData(panel);
     d.timeslots.push({ id: makeid(), time, length: '', rows: tempRows });
-    save(panel, 100);
+    saveStructure(panel, 100);
     closeOverlay();
   });
 }
@@ -1115,7 +1219,7 @@ function openEditTimeslotPopup(panel, tsid) {
     if (!confirm(`Poista ${ts.time} aika ja sen kaikki slotit?`)) return;
     const d = getData(panel);
     d.timeslots = d.timeslots.filter(t => t.id !== tsid);
-    save(panel, 100);
+    saveStructure(panel, 100);
     closeOverlay();
   });
 
@@ -1123,7 +1227,7 @@ function openEditTimeslotPopup(panel, tsid) {
     const newTime = document.getElementById('edit-time').value;
     ts.time = newTime;
     ts.rows = tempRows;
-    save(panel, 100);
+    saveStructure(panel, 100);
     closeOverlay();
   });
 }
@@ -1176,7 +1280,7 @@ function openPaxPopup(panel, tsid, rowid) {
 
   document.getElementById('popup-confirm').addEventListener('click', () => {
     row.pax = [0,1,2,3].map(i => parseInt(document.getElementById('pax-'+i).value) || 0);
-    save(panel, 100);
+    savePax(panel, tsid, rowid);
     closeOverlay();
   });
 
@@ -1221,7 +1325,7 @@ function openLengthPopup(panel, tsid) {
     opt.addEventListener('click', () => {
       const val = opt.dataset.val;
       ts.length = val === '-' ? '' : val;
-      save(panel, 100);
+      saveLength(panel, tsid);
       closeOverlay();
     });
   });
