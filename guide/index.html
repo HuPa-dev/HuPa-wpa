@@ -25,34 +25,151 @@
             <img src="../src/img/haiku-funvisit.png" class="haiku-top">
         </div>
         
-        <section class="guide">
-            <h1>Welcome to Husky Park!</h1>
-            <a>Here are some tips and guidelines for enjoying your park visit! You can also tap on the buttons below to find a map of the park, and detailed instructions for all activities.</a>
-            <h2>Rules</h2>
-            <ul>
-                <li>
-                    <h3>No gloves when petting</h3>
-                    <a>All our huskies are friendly, but some are expert glove thieves, so keep any gloves and handwarmers safe in your pocket or purse, when patting any of our huskies.</a>
-                </li>
-                <li>
-                    <h3>Some signs say "No petting"</h3>
-                    <a>Some of our husky enclosures have a sign, that says NO PETTING. These dogs are not aggressive, but they can get excited very easily so to avoid any accidents, do not pet these dogs.</a>
-                <br>
-                    <a>If you have kids with you, it's best to always ask one of the guides at the park, to make sure which dogs are best for small children to interact with.</a>
-                </li>
-                <li>
-                    <h3>Some signs say "No petting"</h3>
-                    <a>Some of our husky enclosures have a sign, that says NO PETTING. These dogs are not aggressive, but they can get excited very easily so to avoid any accidents, do not pet these dogs.</a>
-                <br>
-                    <a>If you have kids with you, it's best to always ask one of the guides at the park, to make sure which dogs are best for small children to interact with.</a>
-                </li>
-                <li>
-                    <h3>Be careful of slippery ground!</h3>
-                    <a>Although we maintain the park daily, the snow and ice in Rovaniemi can sometimes be <strong>very</strong> slippery. Be careful, wear good shoes and avoid running.</a>
-                </li>
-            </ul>
+      <section class="guide">
+        <h1 id="rules-heading">READ THESE INSTRUCTIONS!</h1>
 
-        </section>
+        <div style="margin-bottom: 16px;">
+            <label for="lang-select" style="font-weight:700; margin-right:8px;">🌐</label>
+            <select id="lang-select" onchange="setLang(this.value)" style="font-size:1rem; padding:4px 8px; border-radius:6px; border:1px solid #ccc; cursor:pointer;">
+                <option value="en">🇬🇧 English</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="fr">🇫🇷 Français</option>
+                <option value="it">🇮🇹 Italiano</option>
+                <option value="zh">🇨🇳 中文</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="ko">🇰🇷 한국어</option>
+            </select>
+        </div>
+
+        <ul id="rules-list"></ul>
+    </section>
+
+    <script>
+    const TRANSLATIONS = {
+        en: {
+            heading: "READ THESE INSTRUCTIONS!",
+            rules: [
+                "No hands through the fence, if there's a \"No Hands\"-sign!",
+                "Take off your gloves when petting dogs.",
+                "Do not feed the dogs anything without our guide's permission.",
+                "If something happens to you or a husky, contact a guide immediately!",
+                "Do not run, shout or make a fuss in the area.",
+                "Children must always be accompanied by an adult!",
+                "The area can be slippery in winter — only use sanded paths!",
+                "Everyone is welcome here! Please respect everyone's privacy.",
+                "Exit is through the restaurant, Musher's Tavern.",
+                "If you have any questions, do not hesitate to ask our guides!",
+                "Always act according to the instructions given!"
+            ]
+        },
+        es: {
+            heading: "¡LEA ESTAS INSTRUCCIONES!",
+            rules: [
+                "¡No meta las manos por la valla si hay un cartel de \"No manos\"!",
+                "Quítese los guantes al acariciar a los perros.",
+                "No alimente a los perros sin el permiso de nuestros guías.",
+                "Si algo le ocurre a usted o a un husky, ¡contacte a un guía de inmediato!",
+                "No corra, grite ni arme alboroto en el área.",
+                "¡Los niños deben estar siempre acompañados por un adulto!",
+                "El área puede ser resbaladiza en invierno — ¡use solo los caminos arenados!",
+                "¡Todos son bienvenidos! Por favor, respete la privacidad de todos.",
+                "La salida es por el restaurante Musher's Tavern.",
+                "Si tiene alguna pregunta, ¡no dude en preguntar a nuestros guías!",
+                "¡Actúe siempre según las instrucciones dadas!"
+            ]
+        },
+        fr: {
+            heading: "LISEZ CES INSTRUCTIONS !",
+            rules: [
+                "Ne passez pas les mains à travers la clôture s'il y a un panneau « Mains interdites » !",
+                "Retirez vos gants avant de caresser les chiens.",
+                "Ne donnez rien à manger aux chiens sans l'autorisation de nos guides.",
+                "Si quelque chose vous arrive à vous ou à un husky, contactez immédiatement un guide !",
+                "Ne courez pas, ne criez pas et ne faites pas de bruit dans la zone.",
+                "Les enfants doivent toujours être accompagnés d'un adulte !",
+                "La zone peut être glissante en hiver — utilisez uniquement les chemins sablés !",
+                "Tout le monde est le bienvenu ! Veuillez respecter la vie privée de chacun.",
+                "La sortie se fait par le restaurant Musher's Tavern.",
+                "Pour toute question, n'hésitez pas à demander à nos guides !",
+                "Agissez toujours selon les instructions données !"
+            ]
+        },
+        it: {
+            heading: "LEGGETE QUESTE ISTRUZIONI!",
+            rules: [
+                "Non passate le mani attraverso la recinzione se c'è un cartello \"Mani vietate\"!",
+                "Toglietevi i guanti prima di accarezzare i cani.",
+                "Non date da mangiare ai cani senza il permesso delle nostre guide.",
+                "Se accade qualcosa a voi o a un husky, contattate subito una guida!",
+                "Non correte, non urlate e non fate confusione nell'area.",
+                "I bambini devono essere sempre accompagnati da un adulto!",
+                "L'area può essere scivolosa in inverno — utilizzate solo i percorsi sabbiati!",
+                "Tutti sono benvenuti! Rispettate la privacy di tutti.",
+                "L'uscita è attraverso il ristorante Musher's Tavern.",
+                "Per qualsiasi domanda, non esitate a chiedere alle nostre guide!",
+                "Agite sempre secondo le istruzioni date!"
+            ]
+        },
+        zh: {
+            heading: "请阅读以下须知！",
+            rules: [
+                "如有『禁止伸手』标志，请勿将手伸过围栏！",
+                "抚摸狗狗前请摘下手套。",
+                "未经导游许可，请勿喂食狗狗任何东西。",
+                "若您或哈士奇发生任何意外，请立即联系导游！",
+                "请勿在区域内奔跑、大喊或喧哗。",
+                "儿童必须全程由成人陪同！",
+                "冬季地面可能湿滑——请仅在铺沙路面上行走！",
+                "欢迎所有人！请尊重他人隐私。",
+                "出口通过餐厅 Musher's Tavern。",
+                "如有任何疑问，请随时向我们的导游提问！",
+                "请始终遵守工作人员的指示！"
+            ]
+        },
+        ja: {
+            heading: "必ずお読みください！",
+            rules: [
+                "「手を入れないで」の看板がある場合、柵の外に手を出さないでください！",
+                "犬を触る前に手袋を外してください。",
+                "ガイドの許可なく犬に食べ物を与えないでください。",
+                "あなたやハスキーに何かあった場合は、すぐにガイドに連絡してください！",
+                "エリア内では走ったり、叫んだり、騒いだりしないでください。",
+                "子供は常に大人と一緒に行動してください！",
+                "冬は地面が滑りやすくなります。砂をまいた道のみご利用ください！",
+                "どなたでも歓迎します！プライバシーを尊重してください。",
+                "出口はレストラン「マッシャーズ・タバーン」を通ります。",
+                "ご不明な点はガイドへお気軽にお尋ねください！",
+                "常にスタッフの指示に従ってください！"
+            ]
+        },
+        ko: {
+            heading: "안내사항을 꼭 읽어주세요!",
+            rules: [
+                "「손 금지」표지판이 있는 경우 울타리 사이로 손을 넣지 마세요!",
+                "개를 쓰다듬기 전에 장갑을 벗어주세요.",
+                "가이드의 허락 없이 개에게 음식을 주지 마세요.",
+                "당신이나 허스키에게 무슨 일이 생기면 즉시 가이드에게 연락하세요!",
+                "구역 내에서 뛰거나 소리치거나 소란을 피우지 마세요.",
+                "어린이는 반드시 어른과 함께 다녀야 합니다!",
+                "겨울에는 지면이 미끄러울 수 있습니다. 모래를 뿌린 길만 이용해 주세요!",
+                "모든 분을 환영합니다! 모든 분의 사생활을 존중해 주세요.",
+                "출구는 레스토랑 Musher's Tavern을 통해 나갑니다.",
+                "궁금한 점이 있으면 언제든지 가이드에게 물어보세요!",
+                "항상 안내에 따라 행동해 주세요!"
+            ]
+        }
+    };
+
+    function setLang(lang) {
+        const t = TRANSLATIONS[lang];
+        document.getElementById('rules-heading').textContent = t.heading;
+        document.getElementById('rules-list').innerHTML = t.rules
+            .map(r => `<li><a>${r}</a></li>`)
+            .join('');
+    }
+
+    setLang('en');
+    </script>
 
 
             <div class="navlinks">
