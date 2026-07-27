@@ -9,16 +9,83 @@
   margin-inline: auto;
 }
 html {
-  background-color: #fff5e4;
+  background-color: #202738;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
   font-family: "hanken-grotesk",system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #fff;
   font-weight: 500;
   color: #111;
   line-height: 1.5;
-  
+  height: 100%;
+  overflow: hidden;
+  background: #f8e1c6;
+}
+
+/*
+  App shell.
+
+  On narrow viewports (phones, or the thin iframe this app is normally
+  embedded in) this is invisible: it's simply 100% width and 100% height,
+  identical to how the page rendered before this was added.
+
+  On wide viewports (desktop, visiting app.huskypark.fi directly) it caps
+  the app to a phone-ish width and centers it, with the dark html/body
+  background showing in the empty space on either side.
+
+  The transform is the important part: it turns this element into the
+  "containing block" for every position:fixed descendant inside it
+  (video backgrounds, popups, the bottom nav bar, the loading spinner).
+  Instead of pinning themselves to the browser window, they now pin
+  themselves to the edges of THIS box - so on desktop they stay confined
+  to the phone-shaped frame instead of stretching across the whole
+  screen, while on mobile/iframe the behavior is unchanged because the
+  frame IS the viewport.
+
+  Scrolling also happens here instead of on body/html, so the fixed nav
+  bar and popups stay correctly pinned to the frame while content
+  scrolls underneath them.
+*/
+.app-frame {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  height: 100dvh;
+  margin-inline: auto;
+  overflow: hidden;
+  background: #fff;
+  transform: translateZ(0);
+  isolation: isolate;
+  /* Makes cqw/cqh units below resolve against THIS box's width instead
+     of the browser viewport - this is what keeps the nav bar (and
+     anything else sized in cqw) correctly scaled on a wide desktop
+     window instead of ballooning to viewport size. */
+  container-type: inline-size;
+  container-name: appframe;
+}
+
+@media (min-width: 481px) {
+  .app-frame {
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/*
+  The actual scroll layer. Page content goes in here. The nav bar,
+  loader, and any popups live OUTSIDE this element (as siblings, direct
+  children of .app-frame) so they are physically incapable of scrolling
+  with the content - not just visually pinned, but structurally
+  separate from the thing that scrolls.
+*/
+.app-scroll {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 header {
@@ -60,7 +127,7 @@ h4 {
 }
 
 #page-loader {
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: #fff5e4;
   z-index: 999;
@@ -176,7 +243,7 @@ button{
 
 .navlinks{
   height: fit-content;
-  position: fixed;
+  position: absolute;
   inset: auto 0 0 0; /* top right bottom left */
   height: auto;
   border-style: solid;
@@ -227,14 +294,13 @@ button{
 
 .navlinks h2{
   text-align: center;
-  font-size: 4vw;
+  font-size: 4cqw;
   margin-bottom: -0.1rem;
 }
 .navlinks img{
-  height: 7vw;
-  width: 7vw;
+  height: 7cqw;
+  width: 7cqw;
   margin-left: auto;
   margin-right: auto;
   margin-bottom: 5%;
 }
-

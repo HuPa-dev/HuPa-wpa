@@ -1,11 +1,16 @@
 /*----   MAP   -----*/
 .map {
-  position: fixed;
+  position: absolute;
   inset: 0;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   z-index: 0;
   padding-bottom:1vh;
+  cursor: grab;
+}
+.map.dragging {
+  cursor: grabbing;
+  user-select: none; /* stop text/image selection while dragging */
 }
 .map-inner {
   position: relative;
@@ -21,7 +26,7 @@
 }
 
 .popup {
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: rgba(0,0,0,.5);
   align-items: center;

@@ -15,12 +15,15 @@
         :root { color-scheme: light; }
         </style>
     </head>
-    <body style="min-height: 100%;" class="guide-body">
-        
+    <body style="min-height: 100%;">
+
+        <div class="app-frame guide-body">
+
         <div id="page-loader">
         <div class="spinner"></div>
         </div>
 
+        <div class="app-scroll">
         <div class="haiku-banner">
             <img src="../src/img/haiku-funvisit.png" class="haiku-top">
         </div>
@@ -170,6 +173,7 @@
 
     setLang('en');
     </script>
+        </div>
 
 
             <div class="navlinks">
@@ -178,7 +182,7 @@
                     <h2>GUIDE</h2>
                 </a>
                 <a href="../map/">
-                    <img src="../src/img/map.svg" style="width: 8vw; height: 8vw; margin-top: -1vw;">
+                    <img src="../src/img/map.svg">
                     <h2>MAP</h2>
                 </a>
                 <a href="../activities/">
@@ -190,7 +194,8 @@
                     <h2>MORE</h2>
                 </a>
             </div>
-    
+
+        </div>
     
     <script src="../src/loader.js"></script>
     </body>
