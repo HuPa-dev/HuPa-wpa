@@ -5,9 +5,9 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 15vh;
-  padding-left: 5vw;
-  padding-right: 5vw;
-  padding-top: 2vh;
+  padding-left: 6vw;
+  padding-right: 6vw;
+  padding-top: 3vh;
   margin-top: -2.8vh;
   background-color: #fff5e4;
   border-style: solid;
@@ -15,19 +15,136 @@
   border-top-width: 4px;
   border-color: rgb(212, 125, 67);
 }
-.guide h1{
-    text-align: center;
-    font-size: 1.91em;
-    padding-bottom: 0.2em;
-}
-.guide h2{
-    font-size: 1.7em;
-    padding-top: 0.3em;
-}
-.guide li{
-  margin-left: 4vw;
-  padding-bottom: 1em;
-}
+
 .guide-body{
-     background-color:rgb(255, 255, 255);
+  background-color: rgb(255, 255, 255);
+}
+
+/* ---- Header ---- */
+
+.guide .eyebrow{
+  text-align: center;
+  font-family: 'aquavit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #e27d43;
+  margin-bottom: 0.4em;
+}
+
+.guide h1{
+  text-align: center;
+  font-size: 1.7em;
+  color: #202738;
+  padding-bottom: 0.6em;
+  line-height: 1.25;
+}
+
+/* ---- Language switcher ---- */
+
+.lang-switch{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5em;
+  margin-bottom: 1.8em;
+}
+
+.lang-pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-family: 'aquavit', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  color: #202738;
+  background: #fff;
+  border: 1.5px solid rgba(32, 39, 56, 0.14);
+  border-radius: 999px;
+  padding: 0.42em 0.85em;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lang-pill:active{
+  transform: scale(0.96);
+}
+
+.lang-pill.active{
+  background: #e27d43;
+  border-color: #e27d43;
+  color: #fff5e4;
+}
+
+/* ---- Rule groups ---- */
+
+#rules-list{
+  list-style: none;
+}
+
+.rule-group{
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-top: 1.7em;
+  margin-bottom: 0.7em;
+}
+
+.rule-group:first-child{
+  margin-top: 0;
+}
+
+.rule-group-label{
+  font-family: 'aquavit', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e27d43;
+  white-space: nowrap;
+}
+
+.rule-group::after{
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(226, 125, 67, 0.3);
+}
+
+/* ---- Rule cards ---- */
+
+.rule{
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85em;
+  background: #fff;
+  border: 1px solid rgba(32, 39, 56, 0.08);
+  border-radius: 14px;
+  padding: 0.75em 0.9em;
+  margin-bottom: 0.55em;
+  box-shadow: 0 1px 2px rgba(32, 39, 56, 0.04);
+}
+
+.rule-icon{
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(226, 125, 67, 0.12);
+  color: #e27d43;
+  display: grid;
+  place-items: center;
+}
+
+.rule-icon svg{
+  width: 18px;
+  height: 18px;
+}
+
+.rule-text{
+  font-size: 0.97rem;
+  line-height: 1.48;
+  color: #202738;
+  padding-top: 0.2em;
 }
