@@ -687,8 +687,10 @@
 <script type="module">
 // ── FIREBASE ──────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot, setDoc, getDoc }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getFirestore, collection, doc, setDoc, updateDoc, deleteDoc,
+  getDocs, onSnapshot, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHAHeZvXIx1g2PAyNj5S5n-UU_ogdw_78",
@@ -710,60 +712,60 @@ const MG_TEMPLATE_TIMES = [
 ];
 
 // ── STATE ─────────────────────────────────────────────────
+// IMPORTANT: each timeslot is now its own Firestore document, and each row
+// inside a timeslot is its own Firestore document (in a sub-collection under
+// that timeslot). Every edit writes to exactly the one document it changes.
+// Nobody ever writes the "whole day" at once, so two people editing
+// different rows (or different timeslots) can never overwrite each other's
+// data, no matter how the timing lines up.
 let currentDate = todayStr();
-let ridesData = null;   // { timeslots: [...] }
-let mgData = null;
-let unsubRides = null;
-let unsubMg = null;
-let saveTimer = null;
+const state = {
+  rides: { timeslots: {} }, // tsid -> { id, time, length, rows: { rowid -> {id, pax, more, order} } }
+  mg:    { timeslots: {} }
+};
+const listeners = { rides: null, mg: null };
+const debounceTimers = {};
+let activePopup = null; // { panel, tsid, refresh() } — kept in sync with live data while a popup is open
 
 function todayStr() {
   const d = new Date();
   return d.toISOString().slice(0, 10);
 }
 
-function makeid() {
-  return Math.random().toString(36).slice(2, 9);
+// ── FIRESTORE PATH HELPERS ────────────────────────────────
+function tsCollection(panel) {
+  return collection(db, 'schedules', currentDate + '_' + panel, 'timeslots');
 }
-
-function emptyDayData(panel) {
-  if (panel === 'mg') {
-    return {
-      timeslots: MG_TEMPLATE_TIMES.map(t => ({
-        id: makeid(),
-        time: t,
-        length: '',
-        rows: [{ id: makeid(), pax: [0,0,0,0], more: '' }]
-      }))
-    };
-  }
-  return { timeslots: [] };
+function tsDocRef(panel, tsid) {
+  return doc(db, 'schedules', currentDate + '_' + panel, 'timeslots', tsid);
+}
+function rowsCollection(panel, tsid) {
+  return collection(db, 'schedules', currentDate + '_' + panel, 'timeslots', tsid, 'rows');
+}
+function rowDocRef(panel, tsid, rowid) {
+  return doc(db, 'schedules', currentDate + '_' + panel, 'timeslots', tsid, 'rows', rowid);
 }
 
 // ── SYNC INDICATOR ────────────────────────────────────────
 const syncDot = document.getElementById('sync-dot');
 const syncLabel = document.getElementById('sync-label');
 
-function setSyncState(state) {
-  syncDot.className = 'sync-dot' + (state === 'live' ? ' active' : state === 'saving' ? ' saving' : '');
-  syncLabel.textContent = state === 'live' ? 'live' : state === 'tallentaa' ? 'tallentaa' : 'päivittää';
+function setSyncState(s) {
+  syncDot.className = 'sync-dot' + (s === 'live' ? ' active' : s === 'saving' ? ' saving' : '');
+  syncLabel.textContent = s === 'live' ? 'live' : s === 'saving' ? 'tallentaa' : 'päivittää';
 }
 
 // LOCKSCREEN
-
 document.getElementById('lock-btn').addEventListener('click', () => {
-  document.getElementById('lockscreen').classList.toggle('active')
-  document.getElementById('lock-btn').classList.toggle('active')
-})
+  document.getElementById('lockscreen').classList.toggle('active');
+  document.getElementById('lock-btn').classList.toggle('active');
+});
 
 // ── DATE PICKER ───────────────────────────────────────────
 const dateInput = document.getElementById('date-input');
 dateInput.value = currentDate;
 
-dateInput.addEventListener('change', () => {
-  currentDate = dateInput.value;
-  loadDay();
-});
+dateInput.addEventListener('change', () => { currentDate = dateInput.value; loadDay(); });
 
 document.getElementById('today-btn').addEventListener('click', () => {
   currentDate = todayStr();
@@ -790,62 +792,160 @@ document.getElementById('next-day').addEventListener('click', () => {
 // ── LOAD DAY ──────────────────────────────────────────────
 async function loadDay() {
   setSyncState('connecting');
+  activePopup = null;
+  closeOverlay();
 
-  // unsubscribe old listeners
-  if (unsubRides) { unsubRides(); unsubRides = null; }
-  if (unsubMg) { unsubMg(); unsubMg = null; }
+  if (listeners.rides) { listeners.rides(); listeners.rides = null; }
+  if (listeners.mg)    { listeners.mg();    listeners.mg = null; }
 
-  ridesData = null;
-  mgData = null;
+  state.rides.timeslots = {};
+  state.mg.timeslots = {};
 
-  document.getElementById('rides-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>loading</div>';
-  document.getElementById('mg-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>loading</div>';
+  document.getElementById('rides-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>lataa</div>';
+  document.getElementById('mg-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>lataa</div>';
 
-  const ridesRef = doc(db, 'schedules', currentDate + '_rides');
-  const mgRef    = doc(db, 'schedules', currentDate + '_mg');
+  await ensureDaySeeded('mg');
+  // rides panel starts with zero timeslots — nothing to seed there.
 
-  // Init docs if they don't exist
-  const [ridesSnap, mgSnap] = await Promise.all([getDoc(ridesRef), getDoc(mgRef)]);
-
-  if (!ridesSnap.exists()) {
-    await setDoc(ridesRef, emptyDayData('rides'));
-  }
-  if (!mgSnap.exists()) {
-    await setDoc(mgRef, emptyDayData('mg'));
-  }
-
-  // Subscribe real-time
-  unsubRides = onSnapshot(ridesRef, snap => {
-    ridesData = snap.data();
-    renderPanel('rides', ridesData);
-    setSyncState('live');
-  });
-
-  unsubMg = onSnapshot(mgRef, snap => {
-    mgData = snap.data();
-    renderPanel('mg', mgData);
-    setSyncState('live');
-  });
+  listeners.rides = attachPanelListeners('rides');
+  listeners.mg    = attachPanelListeners('mg');
 }
 
-// ── SAVE (debounced) ──────────────────────────────────────
-function save(panel, time) {
-  setSyncState('saving');
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    const ref = doc(db, 'schedules', currentDate + '_' + panel);
-    const data = panel === 'rides' ? ridesData : mgData;
-    await setDoc(ref, data);
+async function ensureDaySeeded(panel) {
+  const snap = await getDocs(tsCollection(panel));
+  if (!snap.empty) return;
+  if (panel !== 'mg') return;
+
+  const batch = writeBatch(db);
+  MG_TEMPLATE_TIMES.forEach((t, i) => {
+    const tsRef = doc(tsCollection(panel));
+    batch.set(tsRef, { time: t, length: '' });
+    const rowRef = doc(rowsCollection(panel, tsRef.id));
+    batch.set(rowRef, { pax: [0,0,0,0], more: '', order: Date.now() + i });
+  });
+  await batch.commit();
+}
+
+// ── REAL-TIME LISTENERS ───────────────────────────────────
+function attachPanelListeners(panel) {
+  const rowUnsubs = {};
+
+  const unsubTs = onSnapshot(tsCollection(panel), snap => {
+    snap.docChanges().forEach(change => {
+      const tsid = change.doc.id;
+
+      if (change.type === 'removed') {
+        delete state[panel].timeslots[tsid];
+        if (rowUnsubs[tsid]) { rowUnsubs[tsid](); delete rowUnsubs[tsid]; }
+        return;
+      }
+
+      const d = change.doc.data();
+      if (!state[panel].timeslots[tsid]) {
+        state[panel].timeslots[tsid] = { id: tsid, time: d.time, length: d.length || '', rows: {} };
+      } else {
+        state[panel].timeslots[tsid].time = d.time;
+        state[panel].timeslots[tsid].length = d.length || '';
+      }
+
+      if (!rowUnsubs[tsid]) {
+        rowUnsubs[tsid] = onSnapshot(rowsCollection(panel, tsid), rsnap => {
+          const tsState = state[panel].timeslots[tsid];
+          if (!tsState) return;
+          rsnap.docChanges().forEach(rc => {
+            const rowid = rc.doc.id;
+            if (rc.type === 'removed') {
+              delete tsState.rows[rowid];
+            } else {
+              const rd = rc.doc.data();
+              tsState.rows[rowid] = { id: rowid, pax: rd.pax || [0,0,0,0], more: rd.more || '', order: rd.order || 0 };
+            }
+          });
+          renderPanel(panel);
+        });
+      }
+    });
+
+    renderPanel(panel);
     setSyncState('live');
-  }, time);
+  }, err => console.error('Firestore listener error:', err));
+
+  return () => {
+    unsubTs();
+    Object.values(rowUnsubs).forEach(u => u());
+  };
+}
+
+// ── WRITE HELPERS ─────────────────────────────────────────
+// Immediate single-field writes. Because every row/timeslot is its own
+// document, none of these can ever touch data belonging to a different
+// row or timeslot.
+async function writeRowField(panel, tsid, rowid, field, value) {
+  setSyncState('saving');
+  try { await updateDoc(rowDocRef(panel, tsid, rowid), { [field]: value }); }
+  finally { setSyncState('live'); }
+}
+
+async function writeTimeslotField(panel, tsid, field, value) {
+  setSyncState('saving');
+  try { await updateDoc(tsDocRef(panel, tsid), { [field]: value }); }
+  finally { setSyncState('live'); }
+}
+
+// Debounced version for free-text typing, keyed per row+field so typing in
+// one row's note never resets or blocks the save of another row's note.
+function debouncedRowField(panel, tsid, rowid, field, value, delay) {
+  const key = panel + '|' + tsid + '|' + rowid + '|' + field;
+  setSyncState('saving');
+  clearTimeout(debounceTimers[key]);
+  debounceTimers[key] = setTimeout(() => { writeRowField(panel, tsid, rowid, field, value); }, delay);
+}
+
+async function addRow(panel, tsid, rowData) {
+  rowData = rowData || { pax: [0,0,0,0], more: '' };
+  setSyncState('saving');
+  try {
+    const ref = doc(rowsCollection(panel, tsid));
+    await setDoc(ref, { pax: rowData.pax, more: rowData.more, order: Date.now() });
+    return ref.id;
+  } finally { setSyncState('live'); }
+}
+
+async function deleteRow(panel, tsid, rowid) {
+  setSyncState('saving');
+  try { await deleteDoc(rowDocRef(panel, tsid, rowid)); }
+  finally { setSyncState('live'); }
+}
+
+async function addTimeslot(panel, time, initialRows) {
+  setSyncState('saving');
+  try {
+    const tsRef = doc(tsCollection(panel));
+    const batch = writeBatch(db);
+    batch.set(tsRef, { time, length: '' });
+    initialRows.forEach((r, i) => {
+      const rowRef = doc(rowsCollection(panel, tsRef.id));
+      batch.set(rowRef, { pax: r.pax, more: r.more, order: Date.now() + i });
+    });
+    await batch.commit();
+  } finally { setSyncState('live'); }
+}
+
+async function deleteTimeslot(panel, tsid) {
+  setSyncState('saving');
+  try {
+    const rowsSnap = await getDocs(rowsCollection(panel, tsid));
+    const batch = writeBatch(db);
+    rowsSnap.forEach(d => batch.delete(d.ref));
+    batch.delete(tsDocRef(panel, tsid));
+    await batch.commit();
+  } finally { setSyncState('live'); }
 }
 
 // ── RENDER PANEL ──────────────────────────────────────────
-function renderPanel(panel, data) {
+function renderPanel(panel) {
   const container = document.getElementById(panel + '-content');
-  const accent = panel === 'rides' ? 'rides' : 'mg';
-
-  const sorted = [...(data.timeslots || [])].sort((a, b) => a.time.localeCompare(b.time));
+  const sorted = Object.values(state[panel].timeslots).sort((a, b) => a.time.localeCompare(b.time));
 
   let html = `
     <table class="schedule-table">
@@ -866,7 +966,7 @@ function renderPanel(panel, data) {
   }
 
   sorted.forEach((ts, idx) => {
-    const rows = ts.rows || [];
+    const rows = Object.values(ts.rows).sort((a, b) => a.order - b.order);
     const lenVal = ts.length || '';
     const colorClass = lengthColorClass(lenVal);
     const badgeLabel = lenVal && lenVal !== '-' ? lenVal : '<span style="opacity:0.35">—</span>';
@@ -887,9 +987,9 @@ function renderPanel(panel, data) {
     html += `</tr>`;
 
     if (rows.length === 0) {
-      html += `<tr class="subrow ${colorClass}"><td class="pax-cell"><span class="pax-display empty">—</span></td><td><input class="more-input" placeholder="..." value=""></td><td></td></tr>`;
+      html += `<tr class="subrow ${colorClass}"><td class="pax-cell"><span class="pax-display empty">—</span></td><td><input class="more-input" placeholder="..." value="" disabled></td><td></td></tr>`;
     } else {
-      rows.forEach((row, ri) => {
+      rows.forEach(row => {
         const paxStr = paxDisplay(row.pax);
         const isEmpty = row.pax.every(v => v === 0);
         html += `<tr class="subrow ${colorClass}" data-tsid="${ts.id}" data-rowid="${row.id}">
@@ -926,7 +1026,6 @@ function renderPanel(panel, data) {
   html += '</tbody></table>';
   container.innerHTML = html;
 
-  // Attach events
   container.querySelectorAll('[data-action]').forEach(el => {
     const action = el.dataset.action;
     if (action === 'edit-ts') {
@@ -939,13 +1038,14 @@ function renderPanel(panel, data) {
       el.addEventListener('click', () => openLengthPopup(el.dataset.panel, el.dataset.tsid));
     } else if (action === 'edit-more') {
       el.addEventListener('input', e => {
-        const row = getRow(el.dataset.panel, el.dataset.tsid, el.dataset.rowid);
-        if (row) { row.more = e.target.value; save(el.dataset.panel, 2000); }
+        debouncedRowField(el.dataset.panel, el.dataset.tsid, el.dataset.rowid, 'more', e.target.value, 1200);
       });
     } else if (action === 'del-row') {
       el.addEventListener('click', () => deleteRow(el.dataset.panel, el.dataset.tsid, el.dataset.rowid));
     }
   });
+
+  if (activePopup && activePopup.panel === panel) activePopup.refresh();
 }
 
 // ── HELPERS ───────────────────────────────────────────────
@@ -957,23 +1057,12 @@ function paxDisplay(pax) {
   return (pax || [0,0,0,0]).join('+');
 }
 
-function getData(panel) { return panel === 'rides' ? ridesData : mgData; }
-
-function getTimeslot(panel, tsid) {
-  const d = getData(panel);
-  return d && d.timeslots ? d.timeslots.find(t => t.id === tsid) : null;
-}
-
-function getRow(panel, tsid, rowid) {
-  const ts = getTimeslot(panel, tsid);
-  return ts && ts.rows ? ts.rows.find(r => r.id === rowid) : null;
-}
-
-function deleteRow(panel, tsid, rowid) {
-  const ts = getTimeslot(panel, tsid);
-  if (!ts) return;
-  ts.rows = ts.rows.filter(r => r.id !== rowid);
-  save(panel, 100);
+function lengthColorClass(val) {
+  if (val === '500m') return 'ts-color-500m';
+  if (val === '1km')  return 'ts-color-1km';
+  if (val === '2km')  return 'ts-color-2km';
+  if (val === '5km')  return 'ts-color-5km';
+  return '';
 }
 
 // ── POPUP SYSTEM ──────────────────────────────────────────
@@ -987,15 +1076,17 @@ function openOverlay(html) {
 }
 
 function closeOverlay() {
+  activePopup = null;
   overlay.classList.remove('visible');
   setTimeout(() => { overlay.style.display = 'none'; popup.innerHTML = ''; }, 150);
 }
 
 overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
-
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
 
 // ── ADD TIMESLOT POPUP ────────────────────────────────────
+// This timeslot doesn't exist in Firestore yet, so rows are staged locally
+// until "Lisää aika" is clicked, then created together in one batch.
 function openAddTimeslotPopup(panel) {
   const isMg = panel === 'mg';
   const accentClass = isMg ? 'mg' : '';
@@ -1040,25 +1131,26 @@ function openAddTimeslotPopup(panel) {
   renderRows();
 
   document.getElementById('add-new-row').addEventListener('click', () => {
-    tempRows.push({ id: makeid(), pax: [0,0,0,0], more: '' });
+    tempRows.push({ pax: [0,0,0,0], more: '' });
     renderRows();
   });
 
   document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
 
-  document.getElementById('popup-confirm').addEventListener('click', () => {
+  document.getElementById('popup-confirm').addEventListener('click', async () => {
     const time = document.getElementById('new-time').value;
     if (!time) return;
-    const d = getData(panel);
-    d.timeslots.push({ id: makeid(), time, length: '', rows: tempRows });
-    save(panel, 100);
     closeOverlay();
+    await addTimeslot(panel, time, tempRows);
   });
 }
 
 // ── EDIT TIMESLOT POPUP ───────────────────────────────────
+// This timeslot already exists, so add/delete row buttons write straight to
+// Firestore immediately — everyone sees the change right away and there's
+// nothing to "cancel" that could stomp someone else's edit.
 function openEditTimeslotPopup(panel, tsid) {
-  const ts = getTimeslot(panel, tsid);
+  const ts = state[panel].timeslots[tsid];
   if (!ts) return;
   const isMg = panel === 'mg';
   const accentClass = isMg ? 'mg' : '';
@@ -1079,58 +1171,53 @@ function openEditTimeslotPopup(panel, tsid) {
     </div>
   `);
 
-  // Work on a copy of rows so cancel works
-  let tempRows = ts.rows.map(r => ({ ...r }));
-
-  function renderRows() {
+  function renderRowsList() {
+    const currentTs = state[panel].timeslots[tsid];
+    if (!currentTs) { closeOverlay(); return; }
     const list = document.getElementById('edit-rows-list');
-    if (tempRows.length === 0) {
+    if (!list) return;
+    const rows = Object.values(currentTs.rows).sort((a, b) => a.order - b.order);
+    if (rows.length === 0) {
       list.innerHTML = '<div style="color:var(--text-dimmer);font-family:var(--mono);font-size:11px;padding:4px 0">Ei slotteja</div>';
       return;
     }
-    list.innerHTML = tempRows.map((r, i) => `
+    list.innerHTML = rows.map((r, i) => `
       <div class="slot-row-item">
         <span>Slotti ${i + 1} <span style="color:var(--text-dimmer)">${paxDisplay(r.pax)}</span></span>
-        <button class="slot-row-del" data-i="${i}">✕</button>
+        <button class="slot-row-del" data-rowid="${r.id}">✕</button>
       </div>
     `).join('');
     list.querySelectorAll('.slot-row-del').forEach(btn => {
-      btn.addEventListener('click', () => {
-        tempRows.splice(parseInt(btn.dataset.i), 1);
-        renderRows();
-      });
+      btn.addEventListener('click', () => deleteRow(panel, tsid, btn.dataset.rowid));
     });
   }
 
-  renderRows();
+  renderRowsList();
+  activePopup = { panel, tsid, refresh: renderRowsList };
 
-  document.getElementById('add-edit-row').addEventListener('click', () => {
-    tempRows.push({ id: makeid(), pax: [0,0,0,0], more: '' });
-    renderRows();
-  });
+  document.getElementById('add-edit-row').addEventListener('click', () => { addRow(panel, tsid); });
 
   document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
 
-  document.getElementById('popup-delete').addEventListener('click', () => {
+  document.getElementById('popup-delete').addEventListener('click', async () => {
     if (!confirm(`Poista ${ts.time} aika ja sen kaikki slotit?`)) return;
-    const d = getData(panel);
-    d.timeslots = d.timeslots.filter(t => t.id !== tsid);
-    save(panel, 100);
     closeOverlay();
+    await deleteTimeslot(panel, tsid);
   });
 
-  document.getElementById('popup-confirm').addEventListener('click', () => {
+  document.getElementById('popup-confirm').addEventListener('click', async () => {
     const newTime = document.getElementById('edit-time').value;
-    ts.time = newTime;
-    ts.rows = tempRows;
-    save(panel, 100);
     closeOverlay();
+    if (newTime && newTime !== ts.time) {
+      await writeTimeslotField(panel, tsid, 'time', newTime);
+    }
   });
 }
 
 // ── PAX POPUP ─────────────────────────────────────────────
 function openPaxPopup(panel, tsid, rowid) {
-  const row = getRow(panel, tsid, rowid);
+  const ts = state[panel].timeslots[tsid];
+  const row = ts && ts.rows[rowid];
   if (!row) return;
   const isMg = panel === 'mg';
   const accentClass = isMg ? 'mg' : '';
@@ -1174,30 +1261,19 @@ function openPaxPopup(panel, tsid, rowid) {
 
   document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
 
-  document.getElementById('popup-confirm').addEventListener('click', () => {
-    row.pax = [0,1,2,3].map(i => parseInt(document.getElementById('pax-'+i).value) || 0);
-    save(panel, 100);
+  document.getElementById('popup-confirm').addEventListener('click', async () => {
+    const newPax = [0,1,2,3].map(i => parseInt(document.getElementById('pax-'+i).value) || 0);
     closeOverlay();
+    await writeRowField(panel, tsid, rowid, 'pax', newPax);
   });
 
-  // Focus first input
   setTimeout(() => document.getElementById('pax-0').select(), 50);
-}
-
-// ── LENGTH COLOUR HELPER ──────────────────────────────────
-function lengthColorClass(val) {
-  if (val === '500m') return 'ts-color-500m';
-  if (val === '1km')  return 'ts-color-1km';
-  if (val === '2km')  return 'ts-color-2km';
-  if (val === '5km')  return 'ts-color-5km';
-  return '';
 }
 
 // ── LENGTH PICKER POPUP ───────────────────────────────────
 function openLengthPopup(panel, tsid) {
-  const ts = getTimeslot(panel, tsid);
+  const ts = state[panel].timeslots[tsid];
   if (!ts) return;
-  const isMg = panel === 'mg';
   const current = ts.length || '';
   const options = ['-', '500m', '1km', '2km', '5km'];
 
@@ -1218,11 +1294,10 @@ function openLengthPopup(panel, tsid) {
   document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
 
   popup.querySelectorAll('.length-option').forEach(opt => {
-    opt.addEventListener('click', () => {
+    opt.addEventListener('click', async () => {
       const val = opt.dataset.val;
-      ts.length = val === '-' ? '' : val;
-      save(panel, 100);
       closeOverlay();
+      await writeTimeslotField(panel, tsid, 'length', val === '-' ? '' : val);
     });
   });
 }
