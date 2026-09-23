@@ -3,13 +3,14 @@
     <head>
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Test</title>
+        <title>Husky Park — More</title>
         <link rel="stylesheet" href="../src/style.css?v=dev2" />
+        <link rel="stylesheet" href="src/more-style.css?v=dev1" />
         <link rel="stylesheet" href="https://use.typekit.net/itq8knf.css">
         <!-- Force light mode -->
         <meta name="color-scheme" content="light">
         <meta name="theme-color" content="#fff5e4">
-        <meta name="supported-color-schemes" content="light">     
+        <meta name="supported-color-schemes" content="light">
         <style>
         :root { color-scheme: light; }
         </style>
@@ -26,8 +27,152 @@
         <div class="haiku-banner">
             <img src="../src/img/haiku-funvisit.png" class="haiku-top">
         </div>
-        <h1>Under construction..</h1>
-        <p>This page is still being worked on! We'll update it soon.</p>
+
+        <h1 class="page-title">More</h1>
+        <p class="page-subtitle">Everything else worth knowing.</p>
+
+        <div class="more-list">
+
+            <button class="more-card" data-open-popup="faqPopup" style="--accent:#e27d43;">
+                <span class="more-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2 2 0 1 1 2.8 1.8c-.6.3-.8.6-.8 1.2"/><circle cx="12" cy="16.3" r="0.9" fill="currentColor" stroke="none"/></svg>
+                </span>
+                <span class="more-card-text">
+                    <h2>Frequently Asked Questions</h2>
+                    <span class="more-card-teaser">Quick answers to what visitors ask us most.</span>
+                </span>
+                <span class="more-card-chevron" aria-hidden="true">&#8250;</span>
+            </button>
+
+            <button class="more-card more-card-featured" data-open-popup="tablePopup" style="--accent:#c8724f;">
+                <span class="more-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v9M4 3c0 2 3 2 3 0V3M4 8h0M7 3v18M17 3v18M17 12a3 3 0 0 0 3-3V3a3 3 0 0 0-3 3v6Z"/></svg>
+                </span>
+                <span class="more-card-text">
+                    <h2>Reserve a Table</h2>
+                    <span class="more-card-teaser">Evening dining at Musher's Tavern.</span>
+                </span>
+                <span class="more-card-chevron" aria-hidden="true">&#8250;</span>
+            </button>
+
+            <div class="more-quicklinks">
+                <a class="more-quicklink" href="https://huskypark.fi/reviews" target="_blank" rel="noopener">
+                    <span class="quicklink-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.3 6.9.7-5.2 4.7 1.5 6.8L12 17.8l-6.1 3.2 1.5-6.8-5.2-4.7 6.9-.7L12 2.5z"/></svg>
+                    </span>
+                    <span>Feedback</span>
+                    <span class="quicklink-arrow" aria-hidden="true">&#8599;</span>
+                </a>
+                <a class="more-quicklink" href="https://www.instagram.com/huskyparkarcticcircle/" target="_blank" rel="noopener">
+                    <span class="quicklink-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/></svg>
+                    </span>
+                    <span>Follow Us</span>
+                    <span class="quicklink-arrow" aria-hidden="true">&#8599;</span>
+                </a>
+            </div>
+
+            <hr class="more-divider">
+
+            <button class="more-help-link" data-open-popup="helpPopup">
+                <span class="help-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9.3 9a2.7 2.7 0 1 1 3.8 2.5c-.8.4-1.1.8-1.1 1.6"/><circle cx="12" cy="16.6" r="0.9" fill="currentColor" stroke="none"/></svg>
+                </span>
+                Need Help?
+            </button>
+
+        </div>
+        </div>
+
+
+        <!-- FAQ popup -->
+        <div class="more-popup" id="faqPopup" hidden>
+            <div class="more-popup-panel">
+                <button class="more-popup-close" data-close-popup>&times;</button>
+                <div class="more-popup-scroll">
+                    <div class="more-popup-inner">
+                        <h2 class="more-popup-title">Frequently Asked Questions</h2>
+
+                        <div class="faq-list">
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">
+                                    <span>Do I need to book activities in advance?</span>
+                                    <span class="faq-caret" aria-hidden="true">&#8964;</span>
+                                </button>
+                                <div class="faq-a"><p>[DRAFT] Most activities are first come, first served, so the earlier in the day you arrive, the better your pick of spots. Ask at the entrance if anything needs a reservation.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">
+                                    <span>What should I wear?</span>
+                                    <span class="faq-caret" aria-hidden="true">&#8964;</span>
+                                </button>
+                                <div class="faq-a"><p>[DRAFT] Warm, windproof winter layers and sturdy boots — it's colder outside than it looks in photos. Gloves are handy, but you'll take them off to pet the dogs.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">
+                                    <span>Can I take photos and videos?</span>
+                                    <span class="faq-caret" aria-hidden="true">&#8964;</span>
+                                </button>
+                                <div class="faq-a"><p>[DRAFT] Absolutely — bring your phone or camera. Just keep both hands free (and out of the fence) when a guide asks.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">
+                                    <span>How are the huskies cared for?</span>
+                                    <span class="faq-caret" aria-hidden="true">&#8964;</span>
+                                </button>
+                                <div class="faq-a"><p>[DRAFT] Our dogs work in rotation and rest regularly through the day. Ask any of our guides if you'd like to know more.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">
+                                    <span>Is the park stroller and wheelchair friendly?</span>
+                                    <span class="faq-caret" aria-hidden="true">&#8964;</span>
+                                </button>
+                                <div class="faq-a"><p>[DRAFT] The main paths are packed and sanded, but conditions vary with the weather. A staff member can point out the easiest route on the day.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">
+                                    <span>I lost something — what do I do?</span>
+                                    <span class="faq-caret" aria-hidden="true">&#8964;</span>
+                                </button>
+                                <div class="faq-a"><p>[DRAFT] Let any staff member know as soon as you notice, or use the Need Help button below.</p></div>
+                            </div>
+                        </div>
+
+                        <p class="more-popup-note">Placeholder questions — swap in your real FAQ copy whenever you're ready.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reserve a Table popup -->
+        <div class="more-popup" id="tablePopup" hidden>
+            <div class="more-popup-panel" style="--accent:#c8724f;">
+                <button class="more-popup-close" data-close-popup>&times;</button>
+                <div class="more-popup-scroll">
+                    <div class="more-popup-inner">
+                        <h2 class="more-popup-title">Reserve a Table</h2>
+                        <p>[DRAFT] Round off your day with dinner at Musher's Tavern — our restaurant stays open for evening dining after the park closes. Reserve your table below.</p>
+
+                        <div class="bokun-embed" id="bokunEmbedTarget">
+                            <p class="bokun-loading">Loading booking calendar…</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Need Help popup -->
+        <div class="more-popup" id="helpPopup" hidden>
+            <div class="more-popup-panel" style="--accent:#202738;">
+                <button class="more-popup-close" data-close-popup>&times;</button>
+                <div class="more-popup-scroll">
+                    <div class="more-popup-inner">
+                        <h2 class="more-popup-title">Need Help?</h2>
+                        <p>[DRAFT] The fastest way to reach us is to flag down any staff member wearing a Husky Park jacket — they're on hand throughout the park.</p>
+                        <p>[DRAFT — add a phone number or on-site info point location here]</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -52,7 +197,8 @@
 
         </div>
 
-    <script src="../src/loader.js"></script>  
+    <script src="../src/loader.js"></script>
+    <script src="src/more.js"></script>
     </body>
 
 </html>

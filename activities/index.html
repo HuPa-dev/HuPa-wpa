@@ -3,9 +3,9 @@
     <head>
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Test</title>
+        <title>Husky Park — Activities</title>
         <link rel="stylesheet" href="../src/style.css?v=dev2" />
-        <link rel="stylesheet" href="src/activities-style.css?v=dev2" />
+        <link rel="stylesheet" href="src/activities-style.css?v=dev4" />
         <link rel="stylesheet" href="https://use.typekit.net/itq8knf.css">
         <!-- Force light mode -->
         <meta name="color-scheme" content="light">
@@ -24,33 +24,123 @@
         <div class="spinner"></div>
         </div>
 
+        <div class="activity-popup" id="activityPopup" hidden>
+            <div class="activity-popup-panel">
+                <button class="activity-popup-close">×</button>
+                <div class="activity-popup-scroll">
+                    <div class="activity-popup-media"></div>
+                    <div class="activity-popup-text">
+                        <h2 class="activity-popup-title"></h2>
+                        <div class="activity-popup-chips"></div>
+                        <div class="activity-popup-body"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="app-scroll">
-        <h1 style="padding: 0.45em;">ACTIVITIES</h1>
-        <div class="accordion">
-            <div class="accordion-item" id="husky-rides">
-                <button class="accordion-header">Husky Rides</button>
-                <div class="accordion-content" data-article="articles/husky-rides.html"></div>
+        <h1 class="page-title">ACTIVITIES</h1>
+        <p class="page-subtitle">Tap a card for the full details.</p>
+        <div class="activities-list">
+        <div class="activity-card" id="husky-rides" style="--accent:#e2874c">
+            <div class="activity-media" data-toggle>
+                <span class="activity-tag">RIDES</span>
+                <img src="../src/img/activity-photos/2km-goodlight-rides-4.jpg" alt="Guests riding a husky sled through snowy forest" loading="lazy" onerror="activityMediaFallback(this)" data-fallback-icon="📷">
             </div>
+            <button class="activity-summary" data-toggle aria-haspopup="dialog">
+                <div class="activity-summary-text">
+                    <h2>Husky Rides</h2>
+                    <p class="activity-teaser">A 2km husky-powered adventure through snowy forest trails.</p>
+                    <div class="activity-chips">
+            <span class="chip">🛷 2km route</span>
+            <span class="chip">🎫 Ticket required</span>
+            <span class="chip">👥 3–5 per sled</span>
+                    </div>
+                </div>
+                <span class="activity-open-hint">Details ›</span>
+            </button>
+            <div class="activity-content" hidden data-article="articles/husky-rides.html"></div>
+        </div>
 
-            <div class="accordion-item" id="meet-and-greet">
-                <button class="accordion-header">Husky Meet & Greet</button>
-                <div class="accordion-content" data-article="articles/meet-and-greet.html"></div>
+        <div class="activity-card" id="meet-and-greet" style="--accent:#ea5a44">
+            <div class="activity-media" data-toggle>
+                <span class="activity-tag">MEET & GREET</span>
+                <img src="../src/img/activity-photos/meetandgreet-snowyday-17.jpg" alt="Guests petting a husky in the snow" loading="lazy" onerror="activityMediaFallback(this)" data-fallback-icon="📷">
             </div>
+            <button class="activity-summary" data-toggle aria-haspopup="dialog">
+                <div class="activity-summary-text">
+                    <h2>Husky Meet & Greet</h2>
+                    <p class="activity-teaser">Treat-feeding, up-close time with our friendliest huskies.</p>
+                    <div class="activity-chips">
+            <span class="chip">⏱ ~30 min</span>
+            <span class="chip">🎫 Ticket required</span>
+            <span class="chip">🐾 Hands-on</span>
+                    </div>
+                </div>
+                <span class="activity-open-hint">Details ›</span>
+            </button>
+            <div class="activity-content" hidden data-article="articles/meet-and-greet.html"></div>
+        </div>
 
-            <div class="accordion-item" id="restaurant">
-                <button class="accordion-header">Restaurant</button>
-                <div class="accordion-content" data-article="articles/restaurant.html"></div>
+        <div class="activity-card" id="restaurant" style="--accent:#cf9a3e">
+            <div class="activity-media" data-toggle>
+                <span class="activity-tag">DINING</span>
+                <img src="https://huskypark.fi/wp-content/uploads/2025/06/RaflaBufe-resize_5-1536x1025.jpg" alt="Interior of Musher's Tavern restaurant" loading="lazy" onerror="activityMediaFallback(this)" data-fallback-icon="🍲">
             </div>
+            <button class="activity-summary" data-toggle aria-haspopup="dialog">
+                <div class="activity-summary-text">
+                    <h2>Musher's Tavern</h2>
+                    <p class="activity-teaser">Warm meals, hot drinks, and souvenirs in a cozy setting.</p>
+                    <div class="activity-chips">
+            <span class="chip">🍲 Meals & drinks</span>
+            <span class="chip">🆓 Free entry</span>
+            <span class="chip">🎁 Souvenirs</span>
+                    </div>
+                </div>
+                <span class="activity-open-hint">Details ›</span>
+            </button>
+            <div class="activity-content" hidden data-article="articles/restaurant.html"></div>
+        </div>
 
-            <div class="accordion-item" id="mushers-rest">
-                <button class="accordion-header">Musher's Rest</button>
-                <div class="accordion-content" data-article="articles/mushers-rest.html"></div>
+        <div class="activity-card" id="mushers-rest" style="--accent:#4a8a6f">
+            <div class="activity-media no-photo" data-toggle>
+                <span class="activity-tag">REST STOP</span>
+                <span class="placeholder-icon">🔥</span>
             </div>
-            
-            <div class="accordion-item" id="private-cabin">
-                <button class="accordion-header">Private Cabin</button>
-                <div class="accordion-content" data-article="articles/private-cabin.html"></div>
+            <button class="activity-summary" data-toggle aria-haspopup="dialog">
+                <div class="activity-summary-text">
+                    <h2>Musher's Rest</h2>
+                    <p class="activity-teaser">An open-air cabin with a cozy fire — free for everyone to warm up.</p>
+                    <div class="activity-chips">
+            <span class="chip">🔥 Fireplace</span>
+            <span class="chip">🆓 Free entry</span>
+            <span class="chip">🪑 Seating available</span>
+                    </div>
+                </div>
+                <span class="activity-open-hint">Details ›</span>
+            </button>
+            <div class="activity-content" hidden data-article="articles/mushers-rest.html"></div>
+        </div>
+
+        <div class="activity-card" id="private-cabin" style="--accent:#3f57a7">
+            <div class="activity-media no-photo" data-toggle>
+                <span class="activity-tag">PRIVATE</span>
+                <span class="placeholder-icon">🛖</span>
             </div>
+            <button class="activity-summary" data-toggle aria-haspopup="dialog">
+                <div class="activity-summary-text">
+                    <h2>Private Cabin</h2>
+                    <p class="activity-teaser">A reserved, private space for your group — cozy, warm, just for you.</p>
+                    <div class="activity-chips">
+            <span class="chip">🔒 Reservation required</span>
+            <span class="chip">👪 Private group space</span>
+            <span class="chip">🔥 Warm & cozy</span>
+                    </div>
+                </div>
+                <span class="activity-open-hint">Details ›</span>
+            </button>
+            <div class="activity-content" hidden data-article="articles/private-cabin.html"></div>
+        </div>
         </div>
         </div>
 
@@ -77,37 +167,8 @@
 
         </div>
 
- 
-    <script>
-        document.querySelectorAll('[data-article]').forEach(el => {
-        fetch(el.dataset.article)
-        .then(r => r.text())
-        .then(html => el.innerHTML = html);
-        });
-    </script>
     <script src="../src/loader.js"></script>
-    <script src="src/activities-accordion.js"></script>
-     <script>
-        document.querySelectorAll('.accordion').forEach(accordion => {
-    accordion.addEventListener('click', () => {
-        const panel = accordion.nextElementSibling;
-        
-        // Reset height to auto after images load
-        const images = panel.querySelectorAll('img');
-        let loadedCount = 0;
-        
-        images.forEach(img => {
-        if (img.complete) loadedCount++;
-        else img.addEventListener('load', () => {
-            loadedCount++;
-            if (loadedCount === images.length) panel.style.height = panel.scrollHeight + 'px';
-        });
-        });
-
-        if (loadedCount === images.length) panel.style.height = panel.scrollHeight + 'px';
-    });
-    });
-    </script>
+    <script src="src/activities.js"></script>
     </body>
 
 </html>

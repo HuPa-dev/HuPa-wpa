@@ -1,12 +1,20 @@
-/*----   MAP   -----*/
-.map {
+/*----   MAP PAGE LAYOUT   -----*/
+.map-body {
   position: absolute;
-  inset: 0;
+  inset: 0 0 var(--navlinks-h, 64px) 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 0;
+}
+
+.map {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
-  z-index: 0;
-  padding-bottom:1vh;
   cursor: grab;
+  background: #E7EAF6;
 }
 .map.dragging {
   cursor: grabbing;
@@ -17,9 +25,8 @@
   width: fit-content;
 }
 
-/* map image = larger than screen */
-.map img {
-  padding-bottom: 8vh;
+/* map artwork = larger than screen, drag/scroll to pan */
+.map svg {
   width: auto;
   height: 115dvh;
   display: block;
@@ -87,76 +94,145 @@
   margin-top: auto;
 }
 
-/*----- HOTSPOTS ------*/
+/*----- HOTSPOTS (now real SVG groups placed directly in Illustrator - no more manual CSS coordinates) ------*/
 
 .hotspot {
-  all:unset;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter .15s ease;
+}
+.hotspot:hover,
+.hotspot:focus-visible {
+  filter: brightness(1.1);
+}
+.hotspot:active {
+  filter: brightness(0.93);
+}
+.hotspot:focus-visible {
+  outline: none;
+}
+.hotspot:focus-visible circle:first-of-type {
+  stroke-width: 4.5px;
+}
+
+/* Pulse ring: cloned from each pin's own circle at runtime (same cx/cy/r), so it always matches the pin exactly */
+.hotspot .pulse-ring {
+  fill: none;
+  stroke-width: 2.5px;
+  opacity: 0;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.hotspot.pulsing .pulse-ring {
+  animation: pin-pulse 1s ease-out 2;
+}
+@keyframes pin-pulse {
+  0%   { transform: scale(1);   opacity: .65; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+/*----   LEGEND SHEET   -----*/
+.legend-sheet {
+  flex: 0 0 auto;
+  background: #fff5e4;
+  border-top: 2px solid #fff;
+  box-shadow: 0 -4px 16px rgba(0,0,0,.12);
+  overflow: hidden;
+  height: 52px;
+  transition: height .35s cubic-bezier(.3,.9,.4,1);
+  position: relative;
+  z-index: 500;
+}
+.legend-sheet.expanded {
+  height: 46vh;
+}
+
+.legend-handle {
+  all: unset;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: rgb(255, 232, 206);
-  border-style: solid;
-  border-width: 3px;
-  border-color: #e27d43;
-  text-decoration: none;
-  color: #141312;
+  gap: .5em;
+  width: 100%;
+  height: 52px;
+  cursor: pointer;
   font-family: 'aquavit', sans-serif;
-  font-size: 1.2em;
+  font-size: 1.05em;
+  color: #202738;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
 }
-.entrance{
-  left: 88.7%;
-  top: 62.7%;
+.legend-handle .grip {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #d8c3a5;
 }
-.kammi1{
-  left: 83.3%;
-  top: 58.3%;
+.legend-handle .chevron {
+  transition: transform .35s ease;
+  font-size: .8em;
+  display: inline-block;
 }
-.avokammi{
-  left: 54.8%;
-  top: 57%;
+.legend-sheet.expanded .legend-handle .chevron {
+  transform: rotate(180deg);
 }
-.ajot1{
-  left: 45%;
-  top: 46.7%;
+
+.legend-list {
+  height: calc(46vh - 52px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 1rem 1rem;
 }
-.ajot2{
-  left: 47.4%;
-  top: 37.6%
+
+.legend-row {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: .75em;
+  width: 100%;
+  padding: .6em .2em;
+  border-bottom: 1px solid #ecdcc2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.kammi2{
-  left: 59%;
-  top: 29.5%;
+.legend-row:last-child { border-bottom: none; }
+.legend-row:active,
+.legend-row:focus-visible { background: #f3e4c9; }
+
+.legend-num {
+  flex: 0 0 auto;
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'aquavit', sans-serif;
+  font-weight: 700;
+  font-size: .95em;
+  background: #efe2ca;
+  color: #212738;
+  border: 2px solid var(--pin-color, #c8724f);
 }
-.ravintola{
-  left: 53.4%;
-  top: 22%;
+
+.legend-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
-.hali-red{
-  left: 76.8%;
-  top: 75.6%;
-  border-color: #ec4b36;
-  font-size: 1.4em;
-  width: 31px;
-  height: 31px;
+.legend-title {
+  font-family: 'aquavit', sans-serif;
+  font-size: 1em;
 }
-.hali-blue{
-  left: 78.4%;
-  top: 66.3%;
-  border-color: #4a5fbd;
-  font-size: 1.4em;
-  width: 31px;
-  height: 31px;
-}
-.hali-green{
-  left: 62.9%;
-  top: 48.5%;
-  border-color: #4db849;
-  font-size: 1.4em;
-  width: 31px;
-  height: 31px;
+.legend-desc {
+  font-size: .78em;
+  opacity: .75;
+  line-height: 1.3;
 }
