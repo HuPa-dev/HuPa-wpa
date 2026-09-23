@@ -144,8 +144,7 @@ legendHandle.addEventListener('click', () => {
   legendHandle.setAttribute('aria-expanded', String(expanded));
 });
 
-// Collapse the sheet first, wait for it to finish resizing the map, THEN pan+pulse -
-// otherwise we'd be centering against the (about to shrink) sheet-open viewport size.
+
 function closeLegendThen(cb) {
   if (!legendSheet.classList.contains('expanded')) { cb(); return; }
   legendSheet.classList.remove('expanded');
