@@ -387,6 +387,35 @@
   .subrow:hover .del-subrow-btn { opacity: 1; }
   .del-subrow-btn:hover { color: var(--red); background: rgba(248,113,113,0.1); }
 
+  /* ── AJETTU (DONE) CHECKBOX — rides panel only ── */
+  .col-done { width: 70px; text-align: center !important; }
+  .done-cell { text-align: center; }
+  .done-toggle {
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--surface2);
+    border: 2px solid var(--border-bright);
+    border-radius: var(--radius);
+    color: transparent;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .done-toggle:hover { border-color: var(--green); }
+  .done-toggle.checked {
+    background: var(--green);
+    border-color: var(--green);
+    color: #0a0e15;
+  }
+  .subrow.is-done .pax-display,
+  .subrow.is-done .more-input {
+    opacity: 0.4;
+    text-decoration: line-through;
+  }
+
   /* ── ADD TIMESLOT ROW ── */
   .add-timeslot-row td {
     padding: 12px 8px 4px 8px;
@@ -858,7 +887,7 @@ function attachPanelListeners(panel) {
               delete tsState.rows[rowid];
             } else {
               const rd = rc.doc.data();
-              tsState.rows[rowid] = { id: rowid, pax: rd.pax || [0,0,0,0], more: rd.more || '', order: rd.order || 0 };
+              tsState.rows[rowid] = { id: rowid, pax: rd.pax || [0,0,0,0], more: rd.more || '', order: rd.order || 0, done: !!rd.done };
             }
           });
           renderPanel(panel);
@@ -946,6 +975,7 @@ async function deleteTimeslot(panel, tsid) {
 function renderPanel(panel) {
   const container = document.getElementById(panel + '-content');
   const sorted = Object.values(state[panel].timeslots).sort((a, b) => a.time.localeCompare(b.time));
+  const isRides = panel === 'rides';
 
   let html = `
     <table class="schedule-table">
@@ -955,7 +985,7 @@ function renderPanel(panel) {
           <th class="col-length">Pituus</th>
           <th class="col-pax">PAX</th>
           <th class="col-more">Lisätietoa</th>
-          <th style="width:30px"></th>
+          ${isRides ? '<th class="col-done">Ajettu</th>' : '<th style="width:30px"></th>'}
         </tr>
       </thead>
       <tbody>
@@ -992,7 +1022,13 @@ function renderPanel(panel) {
       rows.forEach(row => {
         const paxStr = paxDisplay(row.pax);
         const isEmpty = row.pax.every(v => v === 0);
-        html += `<tr class="subrow ${colorClass}" data-tsid="${ts.id}" data-rowid="${row.id}">
+        const doneCell = isRides
+          ? `<td class="done-cell">
+              <button class="done-toggle ${row.done ? 'checked' : ''}" title="Ajettu"
+                data-action="toggle-done" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">✓</button>
+            </td>`
+          : '';
+        html += `<tr class="subrow ${colorClass} ${isRides && row.done ? 'is-done' : ''}" data-tsid="${ts.id}" data-rowid="${row.id}">
           <td class="pax-cell">
             <span class="pax-display ${isEmpty ? 'empty' : ''}"
               data-action="edit-pax" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">
@@ -1008,6 +1044,7 @@ function renderPanel(panel) {
             <button class="del-subrow-btn" data-action="del-row"
               data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">✕</button>
           </td> -->
+          ${doneCell}
         </tr>`;
       });
     }
@@ -1039,6 +1076,12 @@ function renderPanel(panel) {
     } else if (action === 'edit-more') {
       el.addEventListener('input', e => {
         debouncedRowField(el.dataset.panel, el.dataset.tsid, el.dataset.rowid, 'more', e.target.value, 1200);
+      });
+    } else if (action === 'toggle-done') {
+      el.addEventListener('click', () => {
+        const row = state[el.dataset.panel].timeslots[el.dataset.tsid]?.rows[el.dataset.rowid];
+        if (!row) return;
+        writeRowField(el.dataset.panel, el.dataset.tsid, el.dataset.rowid, 'done', !row.done);
       });
     } else if (action === 'del-row') {
       el.addEventListener('click', () => deleteRow(el.dataset.panel, el.dataset.tsid, el.dataset.rowid));
