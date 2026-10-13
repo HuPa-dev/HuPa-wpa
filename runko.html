@@ -108,6 +108,37 @@
   }
   .today-btn:hover { border-color: var(--border-bright); color: var(--text); }
 
+  /* ── KOPIOI POHJA ── */
+  .copy-wrap { display: flex; align-items: center; gap: 8px; margin-right: 8px; }
+  .copy-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { border-color: var(--border-bright); color: var(--text); }
+  .copy-btn.confirm { background: var(--accent-rides); border-color: var(--accent-rides); color: #0a0e15; font-weight: 600; }
+  .copy-btn.confirm:disabled { opacity: 0.35; cursor: not-allowed; }
+  .copy-target {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-rides);
+    white-space: nowrap;
+  }
+  .copy-wrap [data-copy-mode] { display: none; }
+  .copy-wrap.active [data-copy-mode="on"] { display: inline-flex; }
+  .copy-wrap:not(.active) [data-copy-mode="off"] { display: inline-flex; }
+  body.copy-mode .panel-rides { outline: 2px dashed var(--accent-rides); outline-offset: -6px; }
+
+  /* Locked: header controls are dead (also made inert in JS) */
+  body.locked .date-picker-wrap { pointer-events: none; opacity: 0.35; }
+
   .sync-indicator {
     display: flex;
     align-items: center;
@@ -677,6 +708,12 @@
   <div class="header-title">PÄIVÄRUNKO</div>
   <button class="lock-btn" id="lock-btn">LUKKO</button>
   <div class="date-picker-wrap">
+    <div class="copy-wrap" id="copy-wrap">
+      <button class="copy-btn" id="copy-start" data-copy-mode="off">Kopioi pohja</button>
+      <span class="copy-target" id="copy-target" data-copy-mode="on"></span>
+      <button class="copy-btn confirm" id="copy-confirm" data-copy-mode="on">Liitä</button>
+      <button class="copy-btn" id="copy-cancel" data-copy-mode="on">Peruuta</button>
+    </div>
     <button class="date-nav-btn" id="prev-day">&#8249;</button>
     <input type="date" id="date-input">
     <button class="date-nav-btn" id="next-day">&#8250;</button>
@@ -753,7 +790,9 @@ const state = {
   mg:    { timeslots: {} }
 };
 const listeners = { rides: null, mg: null };
-const debounceTimers = {};
+const debounceTimers = {}; // key -> { timer, fire }
+const lastSig = { rides: null, mg: null };        // structure signature of what's currently on screen
+const pendingRender = { rides: false, mg: false }; // a structural re-render waiting for the user to stop typing
 let activePopup = null; // { panel, tsid, refresh() } — kept in sync with live data while a popup is open
 
 function todayStr() {
@@ -785,9 +824,19 @@ function setSyncState(s) {
 }
 
 // LOCKSCREEN
+// When locked, ONLY the lock button works: the panels are covered by the
+// lockscreen, and the header controls (date picker, copy/paste) are made inert.
 document.getElementById('lock-btn').addEventListener('click', () => {
-  document.getElementById('lockscreen').classList.toggle('active');
-  document.getElementById('lock-btn').classList.toggle('active');
+  const locked = document.getElementById('lockscreen').classList.toggle('active');
+  document.getElementById('lock-btn').classList.toggle('active', locked);
+  document.body.classList.toggle('locked', locked);
+  const controls = document.querySelector('.date-picker-wrap');
+  if (locked) {
+    controls.setAttribute('inert', '');
+    if (controls.contains(document.activeElement)) document.activeElement.blur();
+  } else {
+    controls.removeAttribute('inert');
+  }
 });
 
 // ── DATE PICKER ───────────────────────────────────────────
@@ -818,8 +867,115 @@ document.getElementById('next-day').addEventListener('click', () => {
   loadDay();
 });
 
+// ── KOPIOI POHJA / LIITÄ ─────────────────────────────────
+// Copy/paste: press "Kopioi pohja" on the day whose layout you want, browse
+// to another day, press "Liitä". The rides layout (times, lengths, number of
+// slots) is pasted onto that day with empty PAX, notes and Ajettu.
+// Meet & Greet is never touched.
+let clipboard = null; // { date, layout: [{ time, length, rowCount }] }
+const copyWrap = document.getElementById('copy-wrap');
+const copyStartBtn = document.getElementById('copy-start');
+const pasteBtn = document.getElementById('copy-confirm');
+
+const dayTs = date => collection(db, 'schedules', date + '_rides', 'timeslots');
+const dayRows = (date, tsid) => collection(db, 'schedules', date + '_rides', 'timeslots', tsid, 'rows');
+
+function fmtDate(iso) {
+  const [y, m, d] = iso.split('-');
+  return `${parseInt(d)}.${parseInt(m)}.${y}`;
+}
+
+function updateCopyUI() {
+  const on = !!clipboard;
+  copyWrap.classList.toggle('active', on);
+  document.body.classList.toggle('copy-mode', on);
+  if (on) {
+    document.getElementById('copy-target').textContent = 'pohja: ' + fmtDate(clipboard.date);
+    pasteBtn.disabled = currentDate === clipboard.date;
+    pasteBtn.title = pasteBtn.disabled ? 'Selaa päivään, johon haluat liittää rungon' : '';
+  }
+}
+
+// COPY — snapshot the current day's rides layout.
+copyStartBtn.addEventListener('click', async () => {
+  const source = currentDate;
+  copyStartBtn.disabled = true;
+  try {
+    const srcTs = await getDocs(dayTs(source));
+    if (srcTs.empty) {
+      alert('Tässä päivässä ei ole aikoja kopioitavaksi.');
+      return;
+    }
+    const layout = [];
+    for (const t of srcTs.docs) {
+      const rows = await getDocs(dayRows(source, t.id));
+      const d = t.data();
+      layout.push({ time: d.time, length: d.length || '', rowCount: rows.size });
+    }
+    clipboard = { date: source, layout };
+  } catch (err) {
+    console.error('Copy failed:', err);
+    alert('Kopiointi epäonnistui. Yritä uudelleen.');
+  } finally {
+    copyStartBtn.disabled = false;
+    updateCopyUI();
+  }
+});
+
+document.getElementById('copy-cancel').addEventListener('click', () => {
+  clipboard = null;
+  updateCopyUI();
+});
+
+// PASTE — replace the current day's rides with the copied layout.
+pasteBtn.addEventListener('click', async () => {
+  if (!clipboard || currentDate === clipboard.date) return;
+  const target = currentDate;
+  const { layout } = clipboard;
+
+  pasteBtn.disabled = true;
+  try {
+    const tgtTs = await getDocs(dayTs(target));
+    if (!tgtTs.empty && !confirm('Päivässä on jo dataa, haluatko varmasti korvata rungon?')) return;
+
+    setSyncState('saving');
+    // Delete the target day's existing rides, then create the copy.
+    const ops = [];
+    for (const t of tgtTs.docs) {
+      const rows = await getDocs(dayRows(target, t.id));
+      rows.forEach(r => ops.push(b => b.delete(r.ref)));
+      ops.push(b => b.delete(t.ref));
+    }
+    const now = Date.now();
+    layout.forEach(ts => {
+      const tsRef = doc(dayTs(target));
+      ops.push(b => b.set(tsRef, { time: ts.time, length: ts.length }));
+      for (let i = 0; i < ts.rowCount; i++) {
+        const rowRef = doc(dayRows(target, tsRef.id));
+        ops.push(b => b.set(rowRef, { pax: [0,0,0,0], more: '', order: now + i }));
+      }
+    });
+
+    // Firestore batches are capped at 500 writes.
+    for (let i = 0; i < ops.length; i += 450) {
+      const batch = writeBatch(db);
+      ops.slice(i, i + 450).forEach(op => op(batch));
+      await batch.commit();
+    }
+
+    clipboard = null; // done — back to normal mode
+  } catch (err) {
+    console.error('Paste failed:', err);
+    alert('Liittäminen epäonnistui. Yritä uudelleen.');
+  } finally {
+    setSyncState('live');
+    updateCopyUI();
+  }
+});
+
 // ── LOAD DAY ──────────────────────────────────────────────
 async function loadDay() {
+  updateCopyUI();
   setSyncState('connecting');
   activePopup = null;
   closeOverlay();
@@ -829,6 +985,8 @@ async function loadDay() {
 
   state.rides.timeslots = {};
   state.mg.timeslots = {};
+  lastSig.rides = lastSig.mg = null;
+  pendingRender.rides = pendingRender.mg = false;
 
   document.getElementById('rides-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>lataa</div>';
   document.getElementById('mg-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>lataa</div>';
@@ -923,12 +1081,38 @@ async function writeTimeslotField(panel, tsid, field, value) {
 
 // Debounced version for free-text typing, keyed per row+field so typing in
 // one row's note never resets or blocks the save of another row's note.
-function debouncedRowField(panel, tsid, rowid, field, value, delay) {
-  const key = panel + '|' + tsid + '|' + rowid + '|' + field;
-  setSyncState('saving');
-  clearTimeout(debounceTimers[key]);
-  debounceTimers[key] = setTimeout(() => { writeRowField(panel, tsid, rowid, field, value); }, delay);
+// The document path is captured NOW, so a pending save can never land on a
+// different day if someone switches the date mid-typing.
+function debounceKey(panel, tsid, rowid, field) {
+  return panel + '|' + tsid + '|' + rowid + '|' + field;
 }
+
+function debouncedRowField(panel, tsid, rowid, field, value, delay) {
+  const key = debounceKey(panel, tsid, rowid, field);
+  const ref = rowDocRef(panel, tsid, rowid);
+  setSyncState('saving');
+  if (debounceTimers[key]) clearTimeout(debounceTimers[key].timer);
+  const fire = async () => {
+    delete debounceTimers[key];
+    try { await updateDoc(ref, { [field]: value }); }
+    catch (err) { console.error('Save failed:', err); }
+    finally { if (!Object.keys(debounceTimers).length) setSyncState('live'); }
+  };
+  debounceTimers[key] = { timer: setTimeout(fire, delay), fire };
+}
+
+// Save immediately (used when the user commits: Enter / closes keyboard / taps away).
+function flushRowField(panel, tsid, rowid, field) {
+  const p = debounceTimers[debounceKey(panel, tsid, rowid, field)];
+  if (p) { clearTimeout(p.timer); p.fire(); }
+}
+
+// Flush everything if the tab is hidden / closed (phone locked, app switched).
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    Object.values(debounceTimers).forEach(p => { clearTimeout(p.timer); p.fire(); });
+  }
+});
 
 async function addRow(panel, tsid, rowData) {
   rowData = rowData || { pax: [0,0,0,0], more: '' };
@@ -972,8 +1156,54 @@ async function deleteTimeslot(panel, tsid) {
 }
 
 // ── RENDER PANEL ──────────────────────────────────────────
+// Everything that affects the table's layout EXCEPT the free-text notes.
+// If this hasn't changed, we only patch note values in place — no rebuild,
+// so a focused input (and the mobile keyboard) is never destroyed.
+function structureSig(panel) {
+  return JSON.stringify(
+    Object.values(state[panel].timeslots)
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map(ts => [ts.id, ts.time, ts.length,
+        Object.values(ts.rows).sort((a, b) => a.id.localeCompare(b.id)).map(r => [r.id, r.pax, r.done, r.order])])
+  );
+}
+
+function isTypingIn(container) {
+  const el = document.activeElement;
+  return !!(el && el.classList.contains('more-input') && container.contains(el));
+}
+
+// Update note fields with the latest synced text, skipping the one being typed in.
+function patchNotes(panel, container) {
+  container.querySelectorAll('.more-input[data-rowid]').forEach(el => {
+    if (el === document.activeElement) return;
+    const row = state[panel].timeslots[el.dataset.tsid]?.rows[el.dataset.rowid];
+    if (row && el.value !== row.more) el.value = row.more;
+  });
+}
+
 function renderPanel(panel) {
   const container = document.getElementById(panel + '-content');
+  const sig = structureSig(panel);
+  const hasTable = !!container.querySelector('table');
+
+  // Only notes changed → live-patch the text, keep the DOM (and keyboard) intact.
+  if (hasTable && sig === lastSig[panel]) {
+    patchNotes(panel, container);
+    if (activePopup && activePopup.panel === panel) activePopup.refresh();
+    return;
+  }
+
+  // Layout changed while someone is typing here → wait until they're done.
+  if (hasTable && isTypingIn(container)) {
+    pendingRender[panel] = true;
+    patchNotes(panel, container);
+    if (activePopup && activePopup.panel === panel) activePopup.refresh();
+    return;
+  }
+
+  pendingRender[panel] = false;
+  lastSig[panel] = sig;
   const sorted = Object.values(state[panel].timeslots).sort((a, b) => a.time.localeCompare(b.time));
   const isRides = panel === 'rides';
 
@@ -1036,7 +1266,7 @@ function renderPanel(panel) {
             </span>
           </td>
           <td>
-            <input class="more-input" placeholder="..."
+            <input class="more-input" placeholder="..." enterkeyhint="done" autocomplete="off"
               value="${esc(row.more || '')}"
               data-action="edit-more" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">
           </td>
@@ -1074,8 +1304,24 @@ function renderPanel(panel) {
     } else if (action === 'edit-length') {
       el.addEventListener('click', () => openLengthPopup(el.dataset.panel, el.dataset.tsid));
     } else if (action === 'edit-more') {
+      const { panel: p, tsid, rowid } = el.dataset;
+      // Near-live sync while typing.
       el.addEventListener('input', e => {
-        debouncedRowField(el.dataset.panel, el.dataset.tsid, el.dataset.rowid, 'more', e.target.value, 1200);
+        const row = state[p].timeslots[tsid]?.rows[rowid];
+        if (row) row.more = e.target.value;
+        debouncedRowField(p, tsid, rowid, 'more', e.target.value, 400);
+      });
+      // Enter / "Done" on the keyboard commits and closes the keyboard.
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      });
+      // Leaving the field (tap elsewhere, keyboard closed) saves immediately,
+      // then applies any layout changes that arrived while typing.
+      el.addEventListener('blur', () => {
+        flushRowField(p, tsid, rowid, 'more');
+        if (pendingRender[p]) {
+          setTimeout(() => { if (!isTypingIn(container)) renderPanel(p); }, 350);
+        }
       });
     } else if (action === 'toggle-done') {
       el.addEventListener('click', () => {
