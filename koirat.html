@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#090a0e">
+<title>HUPA KOIRAT</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #090a0e;
+    --surface2: #0c0f14;
+    --surface3: #151a23;
+    --border: #2a3040;
+    --border-bright: #3a4558;
+    --accent: #f58439;
+    --accent-soft: rgba(245,132,57,0.14);
+    --text: #e2e2ee;
+    --text-dim: #a8add3;
+    --text-dimmer: #9090a3;
+    --red: #f87171;
+    --red-soft: rgba(248,113,113,0.10);
+    --green: #4ade80;
+    --green-soft: rgba(74,222,128,0.10);
+    --yellow: #fbbf24;
+    --radius: 6px;
+    --radius-lg: 10px;
+    --header-h: 56px;
+    --mono: 'Chivo Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  button { -webkit-tap-highlight-color: transparent; }
+
+  /* ── HEADER ── */
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; gap: 12px;
+    height: calc(var(--header-h) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 16px 0;
+    background: rgba(9,10,14,0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .back-btn {
+    width: 38px; height: 38px; flex-shrink: 0;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-size: 24px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+    padding-bottom: 3px;
+  }
+  .back-btn[hidden] { display: none; }
+  .back-btn:hover { border-color: var(--border-bright); color: var(--text); }
+  .back-btn:active { transform: scale(0.94); }
+
+  .crumbs {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 7px;
+    min-width: 0; overflow: hidden; white-space: nowrap;
+  }
+  .crumbs a { color: var(--text-dimmer); transition: color 0.15s; overflow: hidden; text-overflow: ellipsis; max-width: 30vw; }
+  .crumbs a:hover { color: var(--text); }
+  .crumbs .sep { color: var(--border-bright); }
+  .crumbs .cur { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+
+  .sync-indicator {
+    margin-left: auto; flex-shrink: 0;
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+  }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dimmer); transition: background 0.3s; }
+  .sync-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .sync-dot.saving { background: var(--yellow); }
+  .sync-dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  /* ── PAGE ── */
+  .app {
+    max-width: 880px; margin: 0 auto;
+    padding: calc(var(--header-h) + env(safe-area-inset-top) + 24px) 16px calc(56px + env(safe-area-inset-bottom));
+  }
+  .page { animation: pageIn 0.25s ease both; }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .page-title {
+    font-family: var(--mono); font-size: 22px; font-weight: 600;
+    letter-spacing: 0.02em; line-height: 1.3; word-break: break-word;
+  }
+  .page-title .dim { color: var(--text-dimmer); font-weight: 400; }
+  .title-bar {
+    height: 2px; width: 84px; border-radius: 1px;
+    background: linear-gradient(to right, var(--accent), transparent);
+    margin: 12px 0 18px;
+  }
+  .page-sub { color: var(--text-dim); font-size: 15px; line-height: 1.5; margin: -4px 0 18px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 16px;
+    position: sticky; top: calc(var(--header-h) + env(safe-area-inset-top) + 8px); z-index: 50;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .tb-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 44px; padding: 0 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .tb-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .tb-btn:hover { border-color: var(--border-bright); color: var(--text); }
+  .tb-btn:active { transform: scale(0.97); }
+  .tb-btn:disabled { opacity: 0.35; pointer-events: none; }
+  .tb-btn.primary { background: var(--accent); border-color: var(--accent); color: #0a0e15; font-weight: 600; }
+  .tb-btn.primary:hover { opacity: 0.92; color: #0a0e15; }
+  .tb-spacer { flex: 1; }
+
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    height: 44px; padding: 0 12px;
+    flex: 1 1 180px; max-width: 340px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-dimmer);
+    transition: border-color 0.15s;
+  }
+  .search:focus-within { border-color: var(--border-bright); color: var(--text-dim); }
+  .search svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .search input {
+    flex: 1; min-width: 0; height: 100%;
+    background: transparent; border: none; outline: none;
+    font-family: var(--mono); font-size: 14px; color: var(--text);
+  }
+  .search input::placeholder { color: var(--text-dimmer); }
+  .search input::-webkit-search-cancel-button { filter: invert(0.6); }
+
+  @media (max-width: 560px) {
+    .tb-btn.collapse span { display: none; }
+    .tb-btn.collapse { padding: 0 12px; }
+    .page-title { font-size: 19px; }
+  }
+
+  /* ── LIST ── */
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .list-count {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+    letter-spacing: 0.08em; text-transform: uppercase; margin: 2px 2px 2px;
+  }
+  .row {
+    display: flex; align-items: center; gap: 14px;
+    min-height: 70px; padding: 13px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  }
+  .row:hover { border-color: var(--border-bright); background: var(--surface3); }
+  .row:active { transform: scale(0.99); }
+  .row.anim { animation: rowIn 0.3s ease both; animation-delay: calc(var(--i, 0) * 28ms); }
+  @keyframes rowIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 600; font-size: 17px;
+    background: hsl(var(--h) 40% 18%);
+    color: hsl(var(--h) 85% 76%);
+    border: 1px solid hsl(var(--h) 35% 30%);
+  }
+  .row-main { flex: 1; min-width: 0; }
+  .row-title { font-size: 17px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row-title mark { background: var(--accent-soft); color: var(--accent); border-radius: 3px; padding: 0 1px; }
+  .row-title .row-date { font-family: var(--mono); font-size: 13px; color: var(--text-dimmer); font-weight: 400; margin-left: 6px; }
+  .row-meta {
+    font-family: var(--mono); font-size: 12px; color: var(--text-dimmer);
+    margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  }
+  .chev { color: var(--text-dimmer); font-size: 24px; line-height: 1; flex-shrink: 0; transition: transform 0.15s, color 0.15s; }
+  .row:hover .chev { transform: translateX(3px); color: var(--text); }
+
+  .date-block {
+    width: 54px; flex-shrink: 0; text-align: center; padding: 6px 0;
+    border-radius: 8px; background: var(--surface2); border: 1px solid var(--border);
+  }
+  .date-block .d { font-family: var(--mono); font-size: 20px; font-weight: 600; line-height: 1.15; }
+  .date-block .m { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dimmer); }
+  .row.today .date-block { border-color: var(--accent); background: var(--accent-soft); }
+  .row.today .date-block .d { color: var(--accent); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .chip.red { color: var(--red); border-color: rgba(248,113,113,0.4); background: var(--red-soft); }
+  .chip.green { color: var(--green); border-color: rgba(74,222,128,0.35); background: var(--green-soft); }
+  .chip.yellow { color: var(--yellow); border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.08); }
+
+  /* ── EMPTY / LOADING ── */
+  .empty-state {
+    text-align: center; padding: 56px 20px;
+    color: var(--text-dimmer); font-family: var(--mono); font-size: 12px; line-height: 2;
+    border: 1px dashed var(--border); border-radius: var(--radius-lg);
+  }
+  .empty-state .big { font-size: 34px; line-height: 1.2; margin-bottom: 10px; opacity: 0.8; }
+  .empty-state b { color: var(--text-dim); font-weight: 600; }
+  .empty-state .btn { margin-top: 16px; display: inline-block; }
+  .loading-state {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 48px; color: var(--text-dimmer); font-family: var(--mono); font-size: 12px;
+  }
+  .spinner {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--border); border-top-color: var(--text-dim);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── FORM ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px; margin-bottom: 12px;
+  }
+  .check-table { width: 100%; border-collapse: collapse; }
+  .check-table th {
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dimmer);
+    padding: 0 8px 12px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .check-table th.c, .check-table td.c { text-align: center; width: 84px; }
+  .check-table td { padding: 14px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; transition: background 0.2s, box-shadow 0.2s; }
+  .check-table tbody tr:last-child td { border-bottom: none; }
+  .q-label { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; }
+  .q-text { font-size: 15px; color: var(--text-dim); margin-top: 3px; line-height: 1.4; }
+  .check-table tr.abnormal td { background: rgba(248,113,113,0.06); }
+  .check-table tr.abnormal td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+  .check-table tr.abnormal .q-label { color: var(--red); }
+
+  .check {
+    width: 46px; height: 46px; border-radius: 8px;
+    border: 2px solid var(--border-bright); background: var(--surface2);
+    color: transparent; font-size: 22px; font-weight: 700; line-height: 1;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .check:hover { border-color: var(--text-dimmer); }
+  .check.checked { background: var(--green); border-color: var(--green); color: #0a0e15; animation: pop 0.22s ease; }
+  .check.checked.bad { background: var(--red); border-color: var(--red); }
+  @keyframes pop { 50% { transform: scale(1.12); } }
+  .form-locked .check, .form-locked textarea, .form-locked input { pointer-events: none; opacity: 0.5; }
+
+  .field-title { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .field-sub { color: var(--text-dim); font-size: 14px; margin: 5px 0 12px; line-height: 1.5; }
+  .textarea {
+    display: block; width: 100%; min-height: 170px; resize: vertical;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; font-family: var(--sans); font-size: 15px; line-height: 1.55; color: var(--text);
+    outline: none; transition: border-color 0.15s;
+  }
+  .textarea::placeholder, .text-input::placeholder { color: var(--border-bright); }
+  .textarea:focus, .text-input:focus { border-color: var(--border-bright); }
+  .filler-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .filler-row .field-title { white-space: nowrap; }
+  .text-input {
+    flex: 1 1 200px; height: 46px; min-width: 0;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0 14px; font-size: 15px; color: var(--text); outline: none; transition: border-color 0.15s;
+  }
+  .quick-name {
+    height: 46px; padding: 0 14px; border-radius: var(--radius);
+    border: 1px dashed var(--border-bright); background: transparent; color: var(--text-dim);
+    font-family: var(--mono); font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .quick-name:hover { color: var(--text); border-color: var(--text-dimmer); }
+  .quick-name[hidden] { display: none; }
+  .form-footer { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+  .saved-note { font-family: var(--mono); font-size: 11px; color: var(--text-dimmer); margin-right: auto; }
+
+  @media (max-width: 480px) {
+    .card { padding: 14px; }
+    .check-table th.c, .check-table td.c { width: 62px; }
+    .check-table th, .check-table td { padding-left: 4px; padding-right: 4px; }
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: var(--mono); font-size: 12px; padding: 0 16px; height: 42px;
+    border-radius: var(--radius); cursor: pointer; border: 1px solid transparent;
+    transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; pointer-events: none; }
+  .btn-primary { background: var(--accent); color: #0a0e15; font-weight: 600; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary { background: transparent; border-color: var(--border); color: var(--text-dim); }
+  .btn-secondary:hover { border-color: var(--border-bright); color: var(--text); }
+  .btn-danger { background: transparent; border-color: rgba(248,113,113,0.6); color: var(--red); }
+  .btn-danger:hover { background: var(--red-soft); }
+  .btn-danger-solid { background: var(--red); color: #0a0e15; font-weight: 600; }
+  .btn svg { width: 15px; height: 15px; }
+
+  /* ── POPUP ── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    display: none; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s; padding: 16px;
+  }
+  .overlay.visible { opacity: 1; }
+  .popup {
+    background: var(--surface); border: 1px solid var(--border-bright); border-radius: 12px;
+    padding: 22px; width: 100%; max-width: 400px; max-height: calc(100vh - 32px); overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    transform: translateY(8px) scale(0.98); transition: transform 0.15s;
+  }
+  .overlay.visible .popup { transform: none; }
+  .popup-title {
+    font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 16px;
+  }
+  .popup-text { color: var(--text-dim); font-size: 14px; line-height: 1.55; margin-bottom: 18px; }
+  .popup-note { color: var(--text-dimmer); font-size: 13px; line-height: 1.5; margin: -4px 0 14px; }
+  .popup-field { margin-bottom: 14px; }
+  .popup-label {
+    display: block; font-family: var(--mono); font-size: 10px; color: var(--text-dimmer);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .popup-input {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--sans); font-size: 16px; padding: 0 12px; height: 46px;
+    border-radius: var(--radius); width: 100%; outline: none; transition: border-color 0.15s;
+  }
+  .popup-input:focus { border-color: var(--border-bright); }
+  .popup-error { color: var(--red); font-family: var(--mono); font-size: 11px; min-height: 16px; margin: -6px 0 10px; }
+  .popup-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .popup-actions .left { margin-right: auto; }
+
+  .export-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .export-opt {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 18px 10px; border-radius: var(--radius-lg);
+    border: 1px solid var(--border); background: var(--surface2); cursor: pointer; transition: all 0.15s;
+  }
+  .export-opt b { font-family: var(--mono); font-size: 16px; color: var(--text); }
+  .export-opt span { font-size: 12px; color: var(--text-dimmer); }
+  .export-opt:hover { border-color: var(--accent); }
+  .export-opt:disabled { opacity: 0.5; pointer-events: none; }
+
+  /* Calendar */
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cal-month { font-family: var(--mono); font-size: 14px; font-weight: 600; text-transform: capitalize; }
+  .cal-nav {
+    width: 38px; height: 38px; border-radius: var(--radius);
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+    font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  }
+  .cal-nav:hover { border-color: var(--border-bright); color: var(--text); }
+  .cal-nav:disabled { opacity: 0.3; pointer-events: none; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 14px; }
+  .cal-wd { font-family: var(--mono); font-size: 10px; text-transform: uppercase; color: var(--text-dimmer); text-align: center; padding: 4px 0; }
+  .cal-day {
+    aspect-ratio: 1; border-radius: 8px; border: 1px solid transparent; background: transparent;
+    font-family: var(--mono); font-size: 14px; color: var(--text); cursor: pointer; position: relative;
+    display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+  }
+  .cal-day:hover:not(:disabled) { background: var(--surface3); border-color: var(--border); }
+  .cal-day:disabled { color: #3a4050; cursor: default; }
+  .cal-day.today { border-color: var(--border-bright); }
+  .cal-day.marked { font-weight: 700; }
+  .cal-day.marked::after {
+    content: ''; position: absolute; bottom: 5px; left: 50%;
+    width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent);
+  }
+  .cal-day.selected { background: var(--accent); border-color: var(--accent); color: #0a0e15; font-weight: 700; }
+  .cal-day.selected::after { background: #0a0e15; }
+  .cal-day.empty { visibility: hidden; }
+  .cal-info {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-align: center;
+    padding: 10px 8px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 14px; min-height: 38px;
+  }
+  .cal-info b { color: var(--accent); font-weight: 600; }
+
+  /* Toast */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 300;
+    transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+    background: var(--surface3); border: 1px solid var(--border-bright); color: var(--text);
+    font-family: var(--mono); font-size: 12px; padding: 11px 18px; border-radius: 999px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45); transition: all 0.2s; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  code { font-family: var(--mono); font-size: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <button class="back-btn" id="back-btn" aria-label="Takaisin" hidden>&#8249;</button>
+  <nav class="crumbs" id="crumbs"><span class="cur">Koirat</span></nav>
+  <div class="sync-indicator" id="sync" title="">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">yhdistetään</span>
+  </div>
+</header>
+
+<main class="app" id="app">
+  <div class="loading-state"><div class="spinner"></div>lataa</div>
+</main>
+
+<div class="overlay" id="overlay"><div class="popup" id="popup" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// ── FIREBASE ──────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager,
+  collection, doc, setDoc, updateDoc, deleteDoc, getDocs, onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Liitä tähän uuden Firebase-projektin asetukset
+// (Firebase console → Project settings → Your apps → Web app → firebaseConfig)
+const firebaseConfig = {
+  apiKey: "AIzaSyCexwUqWyQlWLGnGxMlFXbhV6DYWUZmjGE",
+  authDomain: "hupa-koirat.firebaseapp.com",
+  projectId: "hupa-koirat",
+  storageBucket: "hupa-koirat.firebasestorage.app",
+  messagingSenderId: "467944892646",
+  appId: "1:467944892646:web:34293d621d64b6e1d47327"
+};
+const CONFIGURED = !String(firebaseConfig.apiKey).startsWith('TÄYTÄ');
+
+// ── LOMAKKEEN KYSYMYKSET ──────────────────────────────────
+// key = tallennusavain (älä muuta olemassa olevia), normal = "normaali" vastaus.
+// Poikkeava vastaus näkyy punaisena ja merkitään listaan.
+const QUESTIONS = [
+  { key: 'ruoka',        label: 'RUOKA',        q: 'Onko koira syönyt?',               normal: 'kylla' },
+  { key: 'uloste',       label: 'ULOSTE',       q: 'Onko uloste normaalia?',           normal: 'kylla' },
+  { key: 'oksentaminen', label: 'OKSENTAMINEN', q: 'Onko koira oksentanut?',           normal: 'ei'    },
+  { key: 'juominen',     label: 'JUOMINEN',     q: 'Onko koira juonut normaalisti?',   normal: 'kylla' },
+  { key: 'yleisvointi',  label: 'YLEISVOINTI',  q: 'Onko koiran yleisvointi normaali?', normal: 'kylla' },
+];
+
+// ── UTILS ─────────────────────────────────────────────────
+const $ = (s, r = document) => r.querySelector(s);
+const app = $('#app');
+const enc = encodeURIComponent;
+const pad = n => String(n).padStart(2, '0');
+const WD = ['sunnuntai','maanantai','tiistai','keskiviikko','torstai','perjantai','lauantai'];
+const WD_SHORT = ['su','ma','ti','ke','to','pe','la'];
+const MONTHS = ['tammikuu','helmikuu','maaliskuu','huhtikuu','toukokuu','kesäkuu','heinäkuu','elokuu','syyskuu','lokakuu','marraskuu','joulukuu'];
+const MON_SHORT = ['tammi','helmi','maalis','huhti','touko','kesä','heinä','elo','syys','loka','marras','joulu'];
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isoOf(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function todayStr() { return isoOf(new Date()); }
+function yesterdayStr() { const d = new Date(); d.setDate(d.getDate() - 1); return isoOf(d); }
+function parseISO(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function fmtDate(s) { const [y, m, d] = s.split('-'); return `${+d}.${+m}.${y}`; }
+function fmtShort(s) { const [, m, d] = s.split('-'); return `${+d}.${+m}.`; }
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function plural(n, one, many) { return `${n} ${n === 1 ? one : many}`; }
+function hueOf(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+function byName(a, b) { return a.name.localeCompare(b.name, 'fi', { sensitivity: 'base' }); }
+function tsToDate(t) { return t && typeof t.toDate === 'function' ? t.toDate() : null; }
+function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+
+const ICON = {
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+};
+
+function loadingHTML() { return '<div class="loading-state"><div class="spinner"></div>lataa</div>'; }
+function emptyHTML(icon, title, sub = '', extra = '') {
+  return `<div class="empty-state"><div class="big">${icon}</div>${title}${sub ? '<br>' + sub : ''}${extra}</div>`;
+}
+
+// ── STATE ─────────────────────────────────────────────────
+let db;
+const S = {
+  route: { name: 'home' },
+  dogs: new Map(), dogsLoaded: false,
+  forms: new Map(), formsDogId: null, formsLoaded: false, formsServer: false,
+  form: null, formKey: null, formLoaded: false, formBuilt: false,
+  search: '',
+};
+const unsub = { dogs: null, forms: null, form: null };
+
+const dogsCol = () => collection(db, 'dogs');
+const dogRef = id => doc(db, 'dogs', id);
+const formsCol = id => collection(db, 'dogs', id, 'forms');
+const formRef = (id, date) => doc(db, 'dogs', id, 'forms', date);
+
+// ── SYNC INDICATOR / WRITES ──────────────────────────────
+const syncDot = $('#sync-dot'), syncLabel = $('#sync-label'), syncWrap = $('#sync');
+let pending = 0;
+const timers = {}; // debounced text saves: key -> { timer, fire }
+
+function updateSync() {
+  let s;
+  if (!CONFIGURED) s = 'off';
+  else if (!navigator.onLine) s = 'offline';
+  else if (pending > 0 || Object.keys(timers).length) s = 'saving';
+  else if (!S.dogsLoaded) s = 'connecting';
+  else s = 'live';
+  syncDot.className = 'sync-dot ' + ({ live: 'active', saving: 'saving', offline: 'offline' }[s] || '');
+  syncLabel.textContent = { live: 'live', saving: 'tallentaa', offline: 'offline', connecting: 'yhdistetään', off: 'ei yhteyttä' }[s];
+  syncWrap.title = s === 'offline' ? 'Ei verkkoyhteyttä. Muutokset tallentuvat, kun yhteys palaa.' : '';
+}
+window.addEventListener('online', updateSync);
+window.addEventListener('offline', updateSync);
+
+// Every write goes to exactly one document, so two people editing different
+// things can never overwrite each other.
+function write(promise, silent = false) {
+  pending++; updateSync();
+  return promise
+    .catch(err => { console.error('Write failed:', err); if (!silent) toast('Tallennus epäonnistui'); })
+    .finally(() => { pending--; updateSync(); });
+}
+
+function debounced(key, ref, data, delay = 500) {
+  if (timers[key]) clearTimeout(timers[key].timer);
+  const fire = () => { delete timers[key]; write(updateDoc(ref, data)); };
+  timers[key] = { timer: setTimeout(fire, delay), fire };
+  updateSync();
+}
+function flush(key) { const t = timers[key]; if (t) { clearTimeout(t.timer); t.fire(); } }
+function flushAll() { Object.keys(timers).forEach(flush); }
+function cancelTimers(prefix) {
+  Object.keys(timers).forEach(k => { if (k.startsWith(prefix)) { clearTimeout(timers[k].timer); delete timers[k]; } });
+  updateSync();
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAll(); });
+window.addEventListener('pagehide', flushAll);
+
+// ── TOAST ─────────────────────────────────────────────────
+const toastEl = $('#toast');
+let toastT;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+
+// ── POPUP SYSTEM ──────────────────────────────────────────
+const overlay = $('#overlay'), popup = $('#popup');
+let onPopupClose = null, closeT;
+
+function runPopupClose() { if (onPopupClose) { const f = onPopupClose; onPopupClose = null; f(); } }
+function bindClose() { popup.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeOverlay)); }
+
+function openOverlay(html, onClose) {
+  runPopupClose();
+  clearTimeout(closeT);
+  popup.innerHTML = html;
+  onPopupClose = onClose || null;
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => overlay.classList.add('visible'));
+  bindClose();
+}
+function closeOverlay() {
+  runPopupClose();
+  if (overlay.style.display !== 'flex') return;
+  overlay.classList.remove('visible');
+  clearTimeout(closeT);
+  closeT = setTimeout(() => { overlay.style.display = 'none'; popup.innerHTML = ''; }, 150);
+}
+overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
+
+function confirmPopup({ title, text, ok = 'OK', danger = false }) {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = v => { if (!done) { done = true; resolve(v); } };
+    openOverlay(`
+      <div class="popup-title">${esc(title)}</div>
+      <p class="popup-text">${esc(text)}</p>
+      <div class="popup-actions">
+        <button class="btn btn-secondary" data-close>Peruuta</button>
+        <button class="btn ${danger ? 'btn-danger-solid' : 'btn-primary'}" id="c-ok">${esc(ok)}</button>
+      </div>`, () => finish(false));
+    $('#c-ok').addEventListener('click', () => { finish(true); closeOverlay(); });
+  });
+}
+
+// ── ROUTER ────────────────────────────────────────────────
+// #/                      → koiralista
+// #/koira/<id>            → koiran lomakkeet
+// #/koira/<id>/<pvm>      → yksittäinen lomake
+function parseRoute() {
+  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  if (parts[0] === 'koira' && parts[1]) {
+    if (parts[2] && DATE_RE.test(parts[2])) return { name: 'form', dogId: parts[1], date: parts[2] };
+    return { name: 'dog', dogId: parts[1] };
+  }
+  return { name: 'home' };
+}
+function go(hash) { if (location.hash === hash) route(); else location.hash = hash; }
+const dogHash = id => `#/koira/${enc(id)}`;
+const formHash = (id, date) => `#/koira/${enc(id)}/${date}`;
+
+function route() {
+  flushAll();
+  closeOverlay();
+  const r = parseRoute();
+  S.route = r;
+
+  // Dog-scope listener (stays alive across dog → form → dog)
+  const dogId = r.dogId || null;
+  if (S.formsDogId !== dogId) {
+    if (unsub.forms) { unsub.forms(); unsub.forms = null; }
+    S.forms = new Map(); S.formsLoaded = false; S.formsServer = false; S.formsDogId = dogId;
+    if (dogId) {
+      unsub.forms = onSnapshot(formsCol(dogId), snap => {
+        S.forms = new Map(snap.docs.map(d => [d.id, { id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }]));
+        S.formsLoaded = true;
+        S.formsServer = !snap.metadata.fromCache;
+        reconcileDogMeta(dogId);
+        onData();
+      }, onErr);
+    }
+  }
+
+  // Single form listener
+  const fk = r.name === 'form' ? dogId + '/' + r.date : null;
+  if (S.formKey !== fk) {
+    if (unsub.form) { unsub.form(); unsub.form = null; }
+    S.form = null; S.formLoaded = false; S.formKey = fk;
+    if (fk) {
+      unsub.form = onSnapshot(formRef(dogId, r.date), snap => {
+        S.form = snap.exists() ? { id: snap.id, ...snap.data({ serverTimestamps: 'estimate' }) } : null;
+        S.formLoaded = true;
+        onData();
+      }, onErr);
+    }
+  }
+  S.formBuilt = false;
+
+  window.scrollTo(0, 0);
+  if (r.name === 'home') renderHome();
+  else if (r.name === 'dog') renderDog();
+  else renderForm();
+  updateChrome();
+}
+
+function onData() {
+  updateChrome();
+  const r = S.route;
+  if (r.name === 'home') renderDogList();
+  else if (r.name === 'dog') { updateDogHeading(); renderFormList(); }
+  else { updateDogHeading(); renderFormBody(); }
+}
+
+function onErr(err) {
+  console.error('Firestore error:', err);
+  toast(err && err.code === 'permission-denied' ? 'Ei käyttöoikeutta – tarkista Firestore-säännöt' : 'Yhteysvirhe');
+}
+
+// Keep the per-dog summary (count + latest date) in sync, so the main list
+// can show it without reading every form.
+function reconcileDogMeta(dogId) {
+  const dog = S.dogs.get(dogId);
+  if (!dog || !S.formsServer || S.formsDogId !== dogId) return;
+  const count = S.forms.size;
+  const lastDate = count ? [...S.forms.keys()].sort().pop() : null;
+  if ((dog.count ?? -1) !== count || (dog.lastDate ?? null) !== lastDate) {
+    dog.count = count; dog.lastDate = lastDate;
+    write(updateDoc(dogRef(dogId), { count, lastDate }), true);
+  }
+}
+
+// ── HEADER (breadcrumbs + back) ───────────────────────────
+const crumbs = $('#crumbs'), backBtn = $('#back-btn');
+function dogName(id) {
+  const d = S.dogs.get(id);
+  return d ? d.name : (S.dogsLoaded ? '?' : '…');
+}
+function updateChrome() {
+  const r = S.route;
+  const sep = '<span class="sep">/</span>';
+  let html;
+  if (r.name === 'home') html = '<span class="cur">Koirat</span>';
+  else if (r.name === 'dog') html = `<a href="#/">Koirat</a>${sep}<span class="cur">${esc(dogName(r.dogId))}</span>`;
+  else html = `<a href="#/">Koirat</a>${sep}<a href="${dogHash(r.dogId)}">${esc(dogName(r.dogId))}</a>${sep}<span class="cur">${fmtShort(r.date)}</span>`;
+  if (crumbs.innerHTML !== html) crumbs.innerHTML = html;
+  backBtn.hidden = r.name === 'home';
+}
+backBtn.addEventListener('click', () => {
+  const r = S.route;
+  go(r.name === 'form' ? dogHash(r.dogId) : '#/');
+});
+
+function updateDogHeading() {
+  const el = $('#dog-name-h');
+  if (el) el.textContent = dogName(S.route.dogId);
+}
+
+// ═════════════════════════════════════════════════════════
+// PÄÄSIVU — KOIRALISTA
+// ═════════════════════════════════════════════════════════
+function renderHome() {
+  app.innerHTML = `
+    <section class="page">
+      <h1 class="page-title">Koirien seurantalomakkeet</h1>
+      <div class="title-bar"></div>
+      <div class="toolbar">
+        <button class="tb-btn primary" id="add-dog">${ICON.plus}<span>Lisää koira</span></button>
+        <label class="search">${ICON.search}
+          <input id="dog-search" type="search" placeholder="Hae nimellä" value="${esc(S.search)}" autocomplete="off" enterkeyhint="search">
+        </label>
+        <div class="tb-spacer"></div>
+        <button class="tb-btn collapse" id="export-btn" title="Vie varmuuskopio">${ICON.download}<span>Vie varmuuskopio</span></button>
+      </div>
+      <div class="list" id="list" data-fresh="1"></div>
+    </section>`;
+
+  $('#add-dog').addEventListener('click', openAddDog);
+  $('#export-btn').addEventListener('click', openExport);
+  const input = $('#dog-search');
+  input.addEventListener('input', () => { S.search = input.value; renderDogList(); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const hits = filteredDogs();
+      if (hits.length === 1) go(dogHash(hits[0].id)); else input.blur();
+    }
+  });
+  renderDogList();
+}
+
+function filteredDogs() {
+  const q = S.search.trim().toLowerCase();
+  const dogs = [...S.dogs.values()].sort(byName);
+  return q ? dogs.filter(d => d.name.toLowerCase().includes(q)) : dogs;
+}
+
+function highlight(name, q) {
+  if (!q) return esc(name);
+  const i = name.toLowerCase().indexOf(q);
+  if (i < 0) return esc(name);
+  return esc(name.slice(0, i)) + '<mark>' + esc(name.slice(i, i + q.length)) + '</mark>' + esc(name.slice(i + q.length));
+}
+
+function renderDogList() {
+  const list = $('#list');
+  if (!list) return;
+  if (!S.dogsLoaded) { list.innerHTML = loadingHTML(); return; }
+  const q = S.search.trim().toLowerCase();
+  const dogs = filteredDogs();
+  const anim = list.dataset.fresh === '1' ? 'anim' : '';
+
+  if (!S.dogs.size) {
+    list.innerHTML = emptyHTML('🐾', 'Ei koiria vielä.', 'Lisää ensimmäinen koira painamalla <b>+ Lisää koira</b>.');
+  } else if (!dogs.length) {
+    list.innerHTML = emptyHTML('🔍', `Ei osumia haulle “${esc(S.search.trim())}”.`);
+  } else {
+    list.dataset.fresh = '0';
+    const head = `<div class="list-count">${q ? plural(dogs.length, 'osuma', 'osumaa') : plural(dogs.length, 'koira', 'koiraa')}</div>`;
+    list.innerHTML = head + dogs.map((d, i) => {
+      const count = d.count || 0;
+      const meta = count
+        ? `<span>${plural(count, 'lomake', 'lomaketta')}</span><span>·</span><span>viimeksi ${d.lastDate ? fmtDate(d.lastDate) : '—'}</span>`
+        : '<span>Ei lomakkeita</span>';
+      return `
+        <a class="row ${anim}" href="${dogHash(d.id)}" style="--i:${Math.min(i, 20)}">
+          <div class="avatar" style="--h:${hueOf(d.name)}">${esc(d.name.trim().charAt(0).toUpperCase() || '?')}</div>
+          <div class="row-main">
+            <div class="row-title">${highlight(d.name, q)}</div>
+            <div class="row-meta">${meta}</div>
+          </div>
+          <span class="chev">›</span>
+        </a>`;
+    }).join('');
+  }
+}
+
+function validateName(name, exceptId = null) {
+  if (!name) return 'Anna koiralle nimi.';
+  if (name.length > 60) return 'Nimi on liian pitkä.';
+  const lower = name.toLowerCase();
+  for (const d of S.dogs.values()) {
+    if (d.id !== exceptId && d.name.toLowerCase() === lower) return 'Tämän niminen koira on jo listalla.';
+  }
+  return '';
+}
+
+function openAddDog() {
+  openOverlay(`
+    <div class="popup-title">Uusi koira</div>
+    <div class="popup-field">
+      <label class="popup-label" for="dog-name">Nimi</label>
+      <input class="popup-input" id="dog-name" maxlength="60" autocomplete="off" autocapitalize="words" enterkeyhint="done">
+    </div>
+    <div class="popup-error" id="err"></div>
+    <div class="popup-actions">
+      <button class="btn btn-secondary" data-close>Peruuta</button>
+      <button class="btn btn-primary" id="ok">Lisää koira</button>
+    </div>`);
+  const input = $('#dog-name');
+  setTimeout(() => input.focus(), 60);
+  const submit = () => {
+    const name = input.value.trim().replace(/\s+/g, ' ');
+    const err = validateName(name);
+    if (err) { $('#err').textContent = err; input.focus(); return; }
+    const ref = doc(dogsCol());
+    write(setDoc(ref, { name, nameLower: name.toLowerCase(), count: 0, lastDate: null, createdAt: serverTimestamp() }));
+    closeOverlay();
+    toast(`${name} lisätty`);
+  };
+  input.addEventListener('input', () => { $('#err').textContent = ''; });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  $('#ok').addEventListener('click', submit);
+}
+
+// ── EXPORT ────────────────────────────────────────────────
+function openExport() {
+  const n = S.dogs.size;
+  openOverlay(`
+    <div class="popup-title">Vie varmuuskopio</div>
+    <p class="popup-text">Lataa ${plural(n, 'koiran', 'koiran')} kaikki lomakkeet tälle laitteelle.
+      <b>JSON</b> on täydellinen varmuuskopio, <b>CSV</b> aukeaa suoraan Excelissä.</p>
+    <div class="export-opts">
+      <button class="export-opt" data-f="json"><b>JSON</b><span>Varmuuskopio</span></button>
+      <button class="export-opt" data-f="csv"><b>CSV</b><span>Excel / taulukko</span></button>
+    </div>
+    <div class="popup-actions"><button class="btn btn-secondary" data-close>Sulje</button></div>`);
+  popup.querySelectorAll('.export-opt').forEach(b => b.addEventListener('click', () => doExport(b.dataset.f, b)));
+}
+
+function csvCell(v) {
+  const s = String(v ?? '');
+  return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function download(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+const ansLabel = v => v === 'kylla' ? 'Kyllä' : v === 'ei' ? 'Ei' : '';
+const isoTs = t => { const d = tsToDate(t); return d ? d.toISOString() : null; };
+
+async function doExport(fmt, btn) {
+  popup.querySelectorAll('.export-opt').forEach(x => x.disabled = true);
+  btn.querySelector('span').textContent = 'Haetaan…';
+  try {
+    const dogs = [...S.dogs.values()].sort(byName);
+    const out = [];
+    for (const d of dogs) {
+      const snap = await getDocs(formsCol(d.id));
+      out.push({
+        id: d.id, name: d.name, createdAt: isoTs(d.createdAt),
+        forms: snap.docs.map(x => {
+          const f = x.data();
+          return {
+            date: x.id,
+            answers: Object.fromEntries(QUESTIONS.map(q => [q.key, (f.answers || {})[q.key] || null])),
+            notes: f.notes || '', filler: f.filler || '',
+            createdAt: isoTs(f.createdAt), updatedAt: isoTs(f.updatedAt),
+          };
+        }).sort((a, b) => a.date.localeCompare(b.date)),
+      });
+    }
+    const stamp = todayStr();
+    if (fmt === 'json') {
+      download(`koirat-varmuuskopio-${stamp}.json`,
+        JSON.stringify({ app: 'hupa-koirat', version: 1, exportedAt: new Date().toISOString(), dogs: out }, null, 2),
+        'application/json');
+    } else {
+      const rows = [['Koira', 'Päivämäärä', ...QUESTIONS.map(q => q.label), 'Huomioitavaa', 'Lomakkeen täyttäjä']];
+      out.forEach(d => d.forms.forEach(f => rows.push([
+        d.name, fmtDate(f.date), ...QUESTIONS.map(q => ansLabel(f.answers[q.key])), f.notes, f.filler
+      ])));
+      download(`koirat-${stamp}.csv`, '﻿' + rows.map(r => r.map(csvCell).join(';')).join('\r\n'), 'text/csv;charset=utf-8');
+    }
+    closeOverlay();
+    toast('Varmuuskopio ladattu');
+  } catch (err) {
+    console.error('Export failed:', err);
+    closeOverlay();
+    toast('Vienti epäonnistui');
+  }
+}
+
+// ═════════════════════════════════════════════════════════
+// KOIRAN SIVU — PÄIVÄLISTA
+// ═════════════════════════════════════════════════════════
+function renderDog() {
+  app.innerHTML = `
+    <section class="page">
+      <h1 class="page-title"><span id="dog-name-h"></span> <span class="dim">–</span> Seurantalomakkeet</h1>
+      <div class="title-bar"></div>
+      <div class="toolbar" id="dog-toolbar">
+        <button class="tb-btn primary" id="add-date">${ICON.plus}<span>Lisää päivä</span></button>
+        <button class="tb-btn" id="search-date">${ICON.calendar}<span>Hae päivä</span></button>
+        <div class="tb-spacer"></div>
+        <button class="tb-btn collapse" id="edit-dog" title="Muokkaa koiraa">${ICON.edit}<span>Muokkaa</span></button>
+      </div>
+      <div class="list" id="list" data-fresh="1"></div>
+    </section>`;
+  updateDogHeading();
+  $('#add-date').addEventListener('click', () => openCalendar('add'));
+  $('#search-date').addEventListener('click', () => openCalendar('search'));
+  $('#edit-dog').addEventListener('click', openEditDog);
+  renderFormList();
+}
+
+function formStatus(f) {
+  const a = f.answers || {};
+  let abnormal = 0, answered = 0;
+  QUESTIONS.forEach(q => { const v = a[q.key]; if (v) { answered++; if (v !== q.normal) abnormal++; } });
+  return {
+    abnormal, answered,
+    complete: answered === QUESTIONS.length && !!(f.filler || '').trim(),
+    notes: !!(f.notes || '').trim(),
+  };
+}
+
+function renderFormList() {
+  const list = $('#list');
+  if (!list) return;
+  const dogId = S.route.dogId;
+  const missing = S.dogsLoaded && !S.dogs.has(dogId);
+  $('#dog-toolbar')?.querySelectorAll('button').forEach(b => b.disabled = missing);
+  if (missing) {
+    list.innerHTML = emptyHTML('🐕', 'Koiraa ei löytynyt.', 'Se on ehkä poistettu.', '<br><a class="btn btn-secondary" href="#/">Takaisin koiralistaan</a>');
+    return;
+  }
+  if (!S.formsLoaded) { list.innerHTML = loadingHTML(); return; }
+  const forms = [...S.forms.values()].sort((a, b) => b.id.localeCompare(a.id));
+  if (!forms.length) {
+    list.innerHTML = emptyHTML('📋', 'Ei lomakkeita vielä.', 'Aloita seuranta painamalla <b>+ Lisää päivä</b>.');
+    return;
+  }
+  const anim = list.dataset.fresh === '1' ? 'anim' : '';
+  list.dataset.fresh = '0';
+  const t = todayStr(), y = yesterdayStr();
+  list.innerHTML = `<div class="list-count">${plural(forms.length, 'lomake', 'lomaketta')}</div>` + forms.map((f, i) => {
+    const st = formStatus(f);
+    const dt = parseISO(f.id);
+    const rel = f.id === t ? 'Tänään' : f.id === y ? 'Eilen' : cap(WD[dt.getDay()]);
+    let chips = '';
+    if (st.abnormal) chips += `<span class="chip red">${plural(st.abnormal, 'poikkeama', 'poikkeamaa')}</span>`;
+    else if (st.answered === QUESTIONS.length) chips += '<span class="chip green">Kaikki normaalia</span>';
+    if (st.notes) chips += '<span class="chip">Huomioita</span>';
+    if (!st.complete) chips += '<span class="chip yellow">Kesken</span>';
+    if ((f.filler || '').trim()) chips += `<span>${esc(f.filler.trim())}</span>`;
+    return `
+      <a class="row ${anim} ${f.id === t ? 'today' : ''}" href="${formHash(dogId, f.id)}" style="--i:${Math.min(i, 20)}">
+        <div class="date-block"><div class="d">${dt.getDate()}</div><div class="m">${MON_SHORT[dt.getMonth()]}</div></div>
+        <div class="row-main">
+          <div class="row-title">${rel}<span class="row-date">${fmtDate(f.id)}</span></div>
+          <div class="row-meta">${chips}</div>
+        </div>
+        <span class="chev">›</span>
+      </a>`;
+  }).join('');
+}
+
+function openEditDog() {
+  const dogId = S.route.dogId;
+  const dog = S.dogs.get(dogId);
+  if (!dog) return;
+  const count = S.formsLoaded ? S.forms.size : (dog.count || 0);
+  openOverlay(`
+    <div class="popup-title">Muokkaa koiraa</div>
+    <div class="popup-field">
+      <label class="popup-label" for="dog-name">Nimi</label>
+      <input class="popup-input" id="dog-name" maxlength="60" value="${esc(dog.name)}" autocomplete="off" enterkeyhint="done">
+    </div>
+    <div class="popup-error" id="err"></div>
+    ${count ? `<p class="popup-note">Koiran voi poistaa vasta, kun siltä on poistettu kaikki lomakkeet (${count} kpl).</p>` : ''}
+    <div class="popup-actions">
+      <button class="btn btn-danger left" id="del" ${count ? 'disabled' : ''}>${ICON.trash}Poista</button>
+      <button class="btn btn-secondary" data-close>Peruuta</button>
+      <button class="btn btn-primary" id="ok">Tallenna</button>
+    </div>`);
+  const input = $('#dog-name');
+  const save = () => {
+    const name = input.value.trim().replace(/\s+/g, ' ');
+    const err = validateName(name, dogId);
+    if (err) { $('#err').textContent = err; return; }
+    if (name !== dog.name) write(updateDoc(dogRef(dogId), { name, nameLower: name.toLowerCase() }));
+    closeOverlay();
+  };
+  input.addEventListener('input', () => { $('#err').textContent = ''; });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+  $('#ok').addEventListener('click', save);
+  $('#del').addEventListener('click', async () => {
+    const ok = await confirmPopup({ title: 'Poista koira', text: `Poistetaanko ${dog.name} listalta? Tätä ei voi perua.`, ok: 'Poista', danger: true });
+    if (!ok) return;
+    go('#/');
+    write(deleteDoc(dogRef(dogId)));
+    toast(`${dog.name} poistettu`);
+  });
+}
+
+// ── KALENTERI (lisää / hae päivä) ─────────────────────────
+function openCalendar(mode) {
+  const dogId = S.route.dogId;
+  const today = todayStr();
+  const now = new Date();
+  const tY = now.getFullYear(), tM = now.getMonth();
+  let sel = mode === 'add' ? today : null;
+  const latest = [...S.forms.keys()].sort().pop();
+  const start = parseISO(mode === 'search' && latest ? latest : today);
+  let vy = start.getFullYear(), vm = start.getMonth();
+
+  openOverlay('');
+  draw();
+
+  function draw() {
+    const marked = new Set(S.forms.keys());
+    const first = (new Date(vy, vm, 1).getDay() + 6) % 7; // Monday first
+    const days = new Date(vy, vm + 1, 0).getDate();
+    let cells = '';
+    for (let i = 0; i < first; i++) cells += '<span class="cal-day empty"></span>';
+    for (let d = 1; d <= days; d++) {
+      const iso = `${vy}-${pad(vm + 1)}-${pad(d)}`;
+      const isM = marked.has(iso);
+      const disabled = mode === 'add' ? iso > today : !isM;
+      cells += `<button class="cal-day ${iso === today ? 'today' : ''} ${isM ? 'marked' : ''} ${iso === sel ? 'selected' : ''}" data-d="${iso}" ${disabled ? 'disabled' : ''}>${d}</button>`;
+    }
+    const monthKey = `${vy}-${pad(vm + 1)}`;
+    const monthCount = [...marked].filter(k => k.startsWith(monthKey)).length;
+    const nextDisabled = mode === 'add' && (vy > tY || (vy === tY && vm >= tM));
+
+    let info, actions;
+    if (mode === 'add') {
+      if (sel) {
+        const dt = parseISO(sel);
+        info = `${cap(WD[dt.getDay()])} <b>${fmtDate(sel)}</b>${marked.has(sel) ? ' · lomake on jo olemassa' : ''}`;
+      } else info = 'Valitse päivä';
+      actions = `
+        <button class="btn btn-secondary left" id="cal-today">Tänään</button>
+        <button class="btn btn-secondary" data-close>Peruuta</button>
+        <button class="btn btn-primary" id="cal-ok" ${sel ? '' : 'disabled'}>${sel && marked.has(sel) ? 'Avaa lomake' : 'Lisää lomake'}</button>`;
+    } else {
+      info = marked.size
+        ? (monthCount ? `<b>${plural(monthCount, 'lomake', 'lomaketta')}</b> tässä kuussa · valitse merkitty päivä` : 'Ei lomakkeita tässä kuussa')
+        : 'Tällä koiralla ei ole vielä lomakkeita';
+      actions = `${latest ? '<button class="btn btn-secondary left" id="cal-latest">Uusin</button>' : ''}<button class="btn btn-secondary" data-close>Sulje</button>`;
+    }
+
+    popup.innerHTML = `
+      <div class="popup-title">${mode === 'add' ? 'Lisää päivä' : 'Hae päivä'}</div>
+      <div class="cal-head">
+        <button class="cal-nav" id="cal-prev" aria-label="Edellinen kuukausi">&#8249;</button>
+        <div class="cal-month">${MONTHS[vm]} ${vy}</div>
+        <button class="cal-nav" id="cal-next" aria-label="Seuraava kuukausi" ${nextDisabled ? 'disabled' : ''}>&#8250;</button>
+      </div>
+      <div class="cal-grid">
+        ${['ma','ti','ke','to','pe','la','su'].map(w => `<span class="cal-wd">${w}</span>`).join('')}
+        ${cells}
+      </div>
+      <div class="cal-info">${info}</div>
+      <div class="popup-actions">${actions}</div>`;
+    bindClose();
+
+    $('#cal-prev').addEventListener('click', () => { vm--; if (vm < 0) { vm = 11; vy--; } draw(); });
+    $('#cal-next').addEventListener('click', () => { vm++; if (vm > 11) { vm = 0; vy++; } draw(); });
+    popup.querySelectorAll('.cal-day[data-d]').forEach(b => b.addEventListener('click', () => {
+      if (mode === 'add') { sel = b.dataset.d; draw(); }
+      else { closeOverlay(); go(formHash(dogId, b.dataset.d)); }
+    }));
+    if (mode === 'add') {
+      $('#cal-today').addEventListener('click', () => { sel = today; vy = tY; vm = tM; draw(); });
+      $('#cal-ok').addEventListener('click', () => sel && createOrOpen(dogId, sel));
+    } else if (latest) {
+      $('#cal-latest').addEventListener('click', () => { const d = parseISO(latest); vy = d.getFullYear(); vm = d.getMonth(); draw(); });
+    }
+  }
+}
+
+function createOrOpen(dogId, date) {
+  closeOverlay();
+  if (!S.forms.has(date)) {
+    write(setDoc(formRef(dogId, date), { date, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true }));
+    toast('Lomake luotu');
+  }
+  go(formHash(dogId, date));
+}
+
+// ═════════════════════════════════════════════════════════
+// LOMAKE — YKSI PÄIVÄ
+// ═════════════════════════════════════════════════════════
+function renderForm() {
+  const { date } = S.route;
+  app.innerHTML = `
+    <section class="page">
+      <h1 class="page-title"><span id="dog-name-h"></span> <span class="dim">–</span> ${fmtDate(date)}</h1>
+      <div class="title-bar"></div>
+      <p class="page-sub">Päivittäinen seuranta, merkitse jokaiseen kohtaan sopiva vaihtoehto.</p>
+      <div id="form-body">${loadingHTML()}</div>
+    </section>`;
+  updateDogHeading();
+  renderFormBody();
+}
+
+function buildFormHTML() {
+  return `
+    <div class="card">
+      <table class="check-table">
+        <thead><tr><th>Seurattava asia</th><th class="c">Kyllä</th><th class="c">Ei</th></tr></thead>
+        <tbody>
+          ${QUESTIONS.map(q => `
+            <tr data-q="${q.key}">
+              <td><div class="q-label">${q.label}</div><div class="q-text">${q.q}</div></td>
+              <td class="c"><button class="check" data-q="${q.key}" data-v="kylla" aria-label="${q.label}: Kyllä" aria-pressed="false">✓</button></td>
+              <td class="c"><button class="check" data-q="${q.key}" data-v="ei" aria-label="${q.label}: Ei" aria-pressed="false">✓</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="field-title">Huomioitavaa</div>
+      <div class="field-sub">Kirjaa tähän mahdolliset poikkeamat, havainnot tai muut asiat, jotka tulee huomioida koiran hoidossa.</div>
+      <textarea class="textarea" id="notes" placeholder="..."></textarea>
+    </div>
+    <div class="card filler-row">
+      <label class="field-title" for="filler">Lomakkeen täyttäjä:</label>
+      <input class="text-input" id="filler" maxlength="100" placeholder="Nimi" autocomplete="off" autocapitalize="words" enterkeyhint="done">
+      <button class="quick-name" id="quick-name" hidden></button>
+    </div>
+    <div class="form-footer">
+      <span class="saved-note" id="saved-note"></span>
+      <button class="btn btn-danger" id="del-form">${ICON.trash}Poista lomake</button>
+    </div>`;
+}
+
+function renderFormBody() {
+  const body = $('#form-body');
+  if (!body) return;
+  const r = S.route;
+  if (S.dogsLoaded && !S.dogs.has(r.dogId)) {
+    S.formBuilt = false;
+    body.innerHTML = emptyHTML('🐕', 'Koiraa ei löytynyt.', 'Se on ehkä poistettu.', '<br><a class="btn btn-secondary" href="#/">Takaisin koiralistaan</a>');
+    return;
+  }
+  if (!S.formLoaded) { body.innerHTML = loadingHTML(); return; }
+  if (!S.form) {
+    S.formBuilt = false;
+    body.innerHTML = emptyHTML('📋', 'Lomaketta ei löytynyt.', 'Se on ehkä poistettu.',
+      `<br><a class="btn btn-secondary" href="${dogHash(r.dogId)}">Takaisin lomakkeisiin</a>`);
+    return;
+  }
+  if (!S.formBuilt) {
+    body.innerHTML = buildFormHTML();
+    bindForm(body);
+    S.formBuilt = true;
+  }
+  patchForm(body);
+}
+
+const curFormRef = () => formRef(S.route.dogId, S.route.date);
+const fieldKey = field => S.formKey + '|' + field;
+
+function patchForm(body) {
+  const f = S.form;
+  if (!f) return;
+  const a = f.answers || {};
+  QUESTIONS.forEach(q => {
+    const v = a[q.key] || null;
+    const tr = body.querySelector(`tr[data-q="${q.key}"]`);
+    tr.classList.toggle('abnormal', !!v && v !== q.normal);
+    tr.querySelectorAll('.check').forEach(b => {
+      const on = b.dataset.v === v;
+      b.classList.toggle('checked', on);
+      b.classList.toggle('bad', on && v !== q.normal);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  });
+  patchText($('#notes', body), 'notes');
+  patchText($('#filler', body), 'filler');
+  autoGrow($('#notes', body));
+  updateQuickName();
+
+  const upd = tsToDate(f.updatedAt);
+  $('#saved-note', body).textContent = upd
+    ? `Tallennettu ${upd.getDate()}.${upd.getMonth() + 1}. klo ${upd.getHours()}.${pad(upd.getMinutes())}`
+    : '';
+}
+
+// Only overwrite a text field with synced data if nobody is typing in it here.
+function patchText(el, field) {
+  if (!el || document.activeElement === el || timers[fieldKey(field)]) return;
+  const val = S.form[field] || '';
+  if (el.value !== val) el.value = val;
+}
+
+function autoGrow(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.max(170, el.scrollHeight + 2) + 'px';
+}
+
+function updateQuickName() {
+  const btn = $('#quick-name'), input = $('#filler');
+  if (!btn || !input) return;
+  const last = lsGet('hupa-koirat-filler');
+  const show = !!last && !input.value.trim();
+  btn.hidden = !show;
+  if (show) btn.textContent = '+ ' + last;
+}
+
+function bindForm(body) {
+  body.querySelectorAll('.check').forEach(b => b.addEventListener('click', () => {
+    if (!S.form) return;
+    const k = b.dataset.q, v = b.dataset.v;
+    const cur = (S.form.answers || {})[k] || null;
+    const nv = cur === v ? null : v; // tap again to clear
+    S.form.answers = { ...(S.form.answers || {}), [k]: nv };
+    patchForm(body);
+    if (navigator.vibrate) navigator.vibrate(8);
+    write(updateDoc(curFormRef(), { [`answers.${k}`]: nv, updatedAt: serverTimestamp() }));
+  }));
+
+  const bindText = (el, field, isLine) => {
+    el.addEventListener('input', () => {
+      if (S.form) S.form[field] = el.value;
+      debounced(fieldKey(field), curFormRef(), { [field]: el.value, updatedAt: serverTimestamp() });
+      if (!isLine) autoGrow(el);
+      else updateQuickName();
+    });
+    el.addEventListener('blur', () => {
+      flush(fieldKey(field));
+      if (isLine && el.value.trim()) lsSet('hupa-koirat-filler', el.value.trim());
+    });
+    if (isLine) el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+  };
+  bindText($('#notes', body), 'notes', false);
+  bindText($('#filler', body), 'filler', true);
+
+  $('#quick-name', body).addEventListener('click', () => {
+    const name = lsGet('hupa-koirat-filler');
+    if (!name || !S.form) return;
+    $('#filler', body).value = name;
+    S.form.filler = name;
+    updateQuickName();
+    write(updateDoc(curFormRef(), { filler: name, updatedAt: serverTimestamp() }));
+  });
+
+  $('#del-form', body).addEventListener('click', async () => {
+    const { dogId, date } = S.route;
+    const ok = await confirmPopup({
+      title: 'Poista lomake',
+      text: `Poistetaanko lomake ${fmtDate(date)} (${dogName(dogId)})? Tätä ei voi perua.`,
+      ok: 'Poista', danger: true,
+    });
+    if (!ok) return;
+    cancelTimers(S.formKey + '|');
+    const ref = formRef(dogId, date);
+    go(dogHash(dogId));
+    write(deleteDoc(ref));
+    toast('Lomake poistettu');
+  });
+}
+
+// ── SETUP NOTICE ──────────────────────────────────────────
+function renderSetup() {
+  updateSync();
+  app.innerHTML = `
+    <section class="page">
+      <h1 class="page-title">Koirien seurantalomakkeet</h1>
+      <div class="title-bar"></div>
+      <div class="card">
+        <div class="field-title">Firebase-asetukset puuttuvat</div>
+        <div class="field-sub" style="margin-bottom:0">Liitä Firebase-projektin asetukset tiedoston <code>firebaseConfig</code>-kohtaan ja lataa sivu uudelleen.</div>
+      </div>
+    </section>`;
+}
+
+// ── INIT ──────────────────────────────────────────────────
+function init() {
+  const fbApp = initializeApp(firebaseConfig);
+  try {
+    // Offline cache: the tablet keeps working with a weak connection and
+    // syncs automatically when the connection returns.
+    db = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+  } catch (err) {
+    console.warn('Offline cache unavailable:', err);
+    db = getFirestore(fbApp);
+  }
+  unsub.dogs = onSnapshot(dogsCol(), snap => {
+    S.dogs = new Map(snap.docs.map(d => [d.id, { id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }]));
+    S.dogsLoaded = true;
+    updateSync();
+    if (S.formsDogId) reconcileDogMeta(S.formsDogId);
+    onData();
+  }, onErr);
+  window.addEventListener('hashchange', route);
+  route();
+  updateSync();
+}
+
+if (CONFIGURED) init(); else renderSetup();
+</script>
+</body>
+</html>
