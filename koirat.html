@@ -306,6 +306,58 @@
   }
   .quick-name:hover { color: var(--text); border-color: var(--text-dimmer); }
   .quick-name[hidden] { display: none; }
+  /* Photos */
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .photo-count { font-family: var(--mono); font-size: 11px; color: var(--text-dimmer); }
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .thumb {
+    position: relative; aspect-ratio: 1; padding: 0; overflow: hidden; cursor: pointer;
+    border-radius: 8px; border: 1px solid var(--border); background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; animation: pageIn 0.25s ease both; }
+  .thumb:hover { border-color: var(--border-bright); }
+  .thumb:active { transform: scale(0.97); }
+  .thumb.add {
+    flex-direction: column; gap: 6px; border: 1px dashed var(--border-bright);
+    color: var(--text-dim); font-family: var(--mono); font-size: 11px;
+  }
+  .thumb.add svg { width: 24px; height: 24px; }
+  .thumb.add:hover { color: var(--text); border-color: var(--accent); }
+  .thumb.uploading { cursor: default; }
+
+  .lightbox {
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(5,6,9,0.96);
+    display: none; align-items: center; justify-content: center;
+  }
+  .lightbox.open { display: flex; animation: pageIn 0.18s ease both; }
+  .lb-bar {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+  }
+  .lb-count { margin-right: auto; letter-spacing: 0.06em; text-transform: uppercase; }
+  .lb-x {
+    width: 42px; height: 42px; border-radius: var(--radius); cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 22px;
+  }
+  .lightbox img {
+    max-width: calc(100% - 32px); max-height: calc(100% - 150px);
+    object-fit: contain; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    user-select: none; -webkit-user-drag: none;
+  }
+  .lb-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 48px; height: 64px; border-radius: var(--radius); cursor: pointer;
+    border: 1px solid var(--border); background: rgba(12,15,20,0.8); color: var(--text); font-size: 28px;
+  }
+  .lb-nav.prev { left: 12px; }
+  .lb-nav.next { right: 12px; }
+  .lb-nav[hidden] { display: none; }
+
   .form-footer { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
   .saved-note { font-family: var(--mono); font-size: 11px; color: var(--text-dimmer); margin-right: auto; }
 
@@ -444,6 +496,16 @@
 </main>
 
 <div class="overlay" id="overlay"><div class="popup" id="popup" role="dialog" aria-modal="true"></div></div>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+  <div class="lb-bar">
+    <span class="lb-count" id="lb-count"></span>
+    <button class="btn btn-danger" id="lb-del"></button>
+    <button class="lb-x" id="lb-close" aria-label="Sulje">&times;</button>
+  </div>
+  <img id="lb-img" alt="">
+  <button class="lb-nav prev" id="lb-prev" aria-label="Edellinen kuva">&#8249;</button>
+  <button class="lb-nav next" id="lb-next" aria-label="Seuraava kuva">&#8250;</button>
+</div>
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -451,18 +513,18 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager,
-  collection, doc, setDoc, updateDoc, deleteDoc, getDocs, onSnapshot, serverTimestamp
+  collection, doc, setDoc, updateDoc, deleteDoc, getDocs, onSnapshot, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Liitä tähän uuden Firebase-projektin asetukset
 // (Firebase console → Project settings → Your apps → Web app → firebaseConfig)
 const firebaseConfig = {
-  apiKey: "AIzaSyCexwUqWyQlWLGnGxMlFXbhV6DYWUZmjGE",
-  authDomain: "hupa-koirat.firebaseapp.com",
-  projectId: "hupa-koirat",
-  storageBucket: "hupa-koirat.firebasestorage.app",
-  messagingSenderId: "467944892646",
-  appId: "1:467944892646:web:34293d621d64b6e1d47327"
+  apiKey: "TÄYTÄ_TÄHÄN",
+  authDomain: "TÄYTÄ_TÄHÄN",
+  projectId: "TÄYTÄ_TÄHÄN",
+  storageBucket: "TÄYTÄ_TÄHÄN",
+  messagingSenderId: "TÄYTÄ_TÄHÄN",
+  appId: "TÄYTÄ_TÄHÄN"
 };
 const CONFIGURED = !String(firebaseConfig.apiKey).startsWith('TÄYTÄ');
 
@@ -476,6 +538,13 @@ const QUESTIONS = [
   { key: 'juominen',     label: 'JUOMINEN',     q: 'Onko koira juonut normaalisti?',   normal: 'kylla' },
   { key: 'yleisvointi',  label: 'YLEISVOINTI',  q: 'Onko koiran yleisvointi normaali?', normal: 'kylla' },
 ];
+
+// ── KUVAT ─────────────────────────────────────────────────
+// Photos are shrunk on the device and stored as small JPEGs in the database
+// (no Cloud Storage / billing needed). ~150–300 KB each.
+const MAX_PHOTOS = 6;
+const PHOTO_MAX_CHARS = 400000; // base64 length ≈ 300 KB JPEG
+const PHOTO_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
 
 // ── UTILS ─────────────────────────────────────────────────
 const $ = (s, r = document) => r.querySelector(s);
@@ -511,6 +580,7 @@ const ICON = {
   download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
   calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
 };
 
@@ -526,14 +596,16 @@ const S = {
   dogs: new Map(), dogsLoaded: false,
   forms: new Map(), formsDogId: null, formsLoaded: false, formsServer: false,
   form: null, formKey: null, formLoaded: false, formBuilt: false,
+  photos: new Map(), photosLoaded: false, photosServer: false, uploading: 0, photoSig: null,
   search: '',
 };
-const unsub = { dogs: null, forms: null, form: null };
+const unsub = { dogs: null, forms: null, form: null, photos: null };
 
 const dogsCol = () => collection(db, 'dogs');
 const dogRef = id => doc(db, 'dogs', id);
 const formsCol = id => collection(db, 'dogs', id, 'forms');
 const formRef = (id, date) => doc(db, 'dogs', id, 'forms', date);
+const photosCol = (id, date) => collection(db, 'dogs', id, 'forms', date, 'photos');
 
 // ── SYNC INDICATOR / WRITES ──────────────────────────────
 const syncDot = $('#sync-dot'), syncLabel = $('#sync-label'), syncWrap = $('#sync');
@@ -671,16 +743,28 @@ function route() {
   const fk = r.name === 'form' ? dogId + '/' + r.date : null;
   if (S.formKey !== fk) {
     if (unsub.form) { unsub.form(); unsub.form = null; }
+    if (unsub.photos) { unsub.photos(); unsub.photos = null; }
     S.form = null; S.formLoaded = false; S.formKey = fk;
+    S.photos = new Map(); S.photosLoaded = false; S.photosServer = false; S.uploading = 0;
     if (fk) {
       unsub.form = onSnapshot(formRef(dogId, r.date), snap => {
         S.form = snap.exists() ? { id: snap.id, ...snap.data({ serverTimestamps: 'estimate' }) } : null;
         S.formLoaded = true;
+        reconcilePhotoCount();
+        onData();
+      }, onErr);
+      unsub.photos = onSnapshot(photosCol(dogId, r.date), snap => {
+        S.photos = new Map(snap.docs.map(d => [d.id, { id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }]));
+        S.photosLoaded = true;
+        S.photosServer = !snap.metadata.fromCache;
+        reconcilePhotoCount();
         onData();
       }, onErr);
     }
   }
   S.formBuilt = false;
+  S.photoSig = null;
+  closeLightbox();
 
   window.scrollTo(0, 0);
   if (r.name === 'home') renderHome();
@@ -712,6 +796,16 @@ function reconcileDogMeta(dogId) {
   if ((dog.count ?? -1) !== count || (dog.lastDate ?? null) !== lastDate) {
     dog.count = count; dog.lastDate = lastDate;
     write(updateDoc(dogRef(dogId), { count, lastDate }), true);
+  }
+}
+
+// Photo count is stored on the form so the date list can show it.
+function reconcilePhotoCount() {
+  if (!S.form || !S.photosServer) return;
+  const n = S.photos.size;
+  if ((S.form.photoCount || 0) !== n) {
+    S.form.photoCount = n;
+    write(updateDoc(curFormRef(), { photoCount: n }), true);
   }
 }
 
@@ -863,7 +957,7 @@ function openExport() {
   openOverlay(`
     <div class="popup-title">Vie varmuuskopio</div>
     <p class="popup-text">Lataa ${plural(n, 'koiran', 'koiran')} kaikki lomakkeet tälle laitteelle.
-      <b>JSON</b> on täydellinen varmuuskopio, <b>CSV</b> aukeaa suoraan Excelissä.</p>
+      <b>JSON</b> on täydellinen varmuuskopio kuvineen, <b>CSV</b> aukeaa suoraan Excelissä (ilman kuvia).</p>
     <div class="export-opts">
       <button class="export-opt" data-f="json"><b>JSON</b><span>Varmuuskopio</span></button>
       <button class="export-opt" data-f="csv"><b>CSV</b><span>Excel / taulukko</span></button>
@@ -895,18 +989,27 @@ async function doExport(fmt, btn) {
     const out = [];
     for (const d of dogs) {
       const snap = await getDocs(formsCol(d.id));
-      out.push({
-        id: d.id, name: d.name, createdAt: isoTs(d.createdAt),
-        forms: snap.docs.map(x => {
-          const f = x.data();
-          return {
-            date: x.id,
-            answers: Object.fromEntries(QUESTIONS.map(q => [q.key, (f.answers || {})[q.key] || null])),
-            notes: f.notes || '', filler: f.filler || '',
-            createdAt: isoTs(f.createdAt), updatedAt: isoTs(f.updatedAt),
-          };
-        }).sort((a, b) => a.date.localeCompare(b.date)),
-      });
+      const forms = await Promise.all(snap.docs.map(async x => {
+        const f = x.data();
+        const form = {
+          date: x.id,
+          answers: Object.fromEntries(QUESTIONS.map(q => [q.key, (f.answers || {})[q.key] || null])),
+          notes: f.notes || '', filler: f.filler || '',
+          photoCount: f.photoCount || 0,
+          createdAt: isoTs(f.createdAt), updatedAt: isoTs(f.updatedAt),
+        };
+        // Photos are only fetched for the JSON backup, and only for forms that have any.
+        if (fmt === 'json' && f.photoCount) {
+          const ps = await getDocs(photosCol(d.id, x.id));
+          form.photos = ps.docs.map(p => {
+            const pd = p.data();
+            return { id: p.id, data: pd.data, w: pd.w || null, h: pd.h || null, createdAt: isoTs(pd.createdAt) };
+          });
+        }
+        return form;
+      }));
+      forms.sort((a, b) => a.date.localeCompare(b.date));
+      out.push({ id: d.id, name: d.name, createdAt: isoTs(d.createdAt), forms });
     }
     const stamp = todayStr();
     if (fmt === 'json') {
@@ -914,9 +1017,9 @@ async function doExport(fmt, btn) {
         JSON.stringify({ app: 'hupa-koirat', version: 1, exportedAt: new Date().toISOString(), dogs: out }, null, 2),
         'application/json');
     } else {
-      const rows = [['Koira', 'Päivämäärä', ...QUESTIONS.map(q => q.label), 'Huomioitavaa', 'Lomakkeen täyttäjä']];
+      const rows = [['Koira', 'Päivämäärä', ...QUESTIONS.map(q => q.label), 'Huomioitavaa', 'Lomakkeen täyttäjä', 'Kuvia']];
       out.forEach(d => d.forms.forEach(f => rows.push([
-        d.name, fmtDate(f.date), ...QUESTIONS.map(q => ansLabel(f.answers[q.key])), f.notes, f.filler
+        d.name, fmtDate(f.date), ...QUESTIONS.map(q => ansLabel(f.answers[q.key])), f.notes, f.filler, f.photoCount || ''
       ])));
       download(`koirat-${stamp}.csv`, '﻿' + rows.map(r => r.map(csvCell).join(';')).join('\r\n'), 'text/csv;charset=utf-8');
     }
@@ -990,6 +1093,7 @@ function renderFormList() {
     if (st.abnormal) chips += `<span class="chip red">${plural(st.abnormal, 'poikkeama', 'poikkeamaa')}</span>`;
     else if (st.answered === QUESTIONS.length) chips += '<span class="chip green">Kaikki normaalia</span>';
     if (st.notes) chips += '<span class="chip">Huomioita</span>';
+    if (f.photoCount) chips += `<span class="chip">${plural(f.photoCount, 'kuva', 'kuvaa')}</span>`;
     if (!st.complete) chips += '<span class="chip yellow">Kesken</span>';
     if ((f.filler || '').trim()) chips += `<span>${esc(f.filler.trim())}</span>`;
     return `
@@ -1164,6 +1268,15 @@ function buildFormHTML() {
       <div class="field-sub">Kirjaa tähän mahdolliset poikkeamat, havainnot tai muut asiat, jotka tulee huomioida koiran hoidossa.</div>
       <textarea class="textarea" id="notes" placeholder="..."></textarea>
     </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="field-title">Kuvat</div>
+        <span class="photo-count" id="photo-count"></span>
+      </div>
+      <div class="field-sub">Lisää kuva vain, kun siitä on hyötyä koiran hoidossa – esim. haava, iho-ongelma tai poikkeava uloste.</div>
+      <div class="photo-grid" id="photo-grid"></div>
+      <input type="file" id="photo-input" accept="image/*" multiple hidden>
+    </div>
     <div class="card filler-row">
       <label class="field-title" for="filler">Lomakkeen täyttäjä:</label>
       <input class="text-input" id="filler" maxlength="100" placeholder="Nimi" autocomplete="off" autocapitalize="words" enterkeyhint="done">
@@ -1221,6 +1334,7 @@ function patchForm(body) {
   patchText($('#filler', body), 'filler');
   autoGrow($('#notes', body));
   updateQuickName();
+  renderPhotos(body);
 
   const upd = tsToDate(f.updatedAt);
   $('#saved-note', body).textContent = upd
@@ -1287,21 +1401,181 @@ function bindForm(body) {
     write(updateDoc(curFormRef(), { filler: name, updatedAt: serverTimestamp() }));
   });
 
+  $('#photo-input', body).addEventListener('change', e => {
+    const files = [...e.target.files];
+    e.target.value = '';
+    addPhotos(files, body);
+  });
+
   $('#del-form', body).addEventListener('click', async () => {
     const { dogId, date } = S.route;
+    const n = S.photos.size;
     const ok = await confirmPopup({
       title: 'Poista lomake',
-      text: `Poistetaanko lomake ${fmtDate(date)} (${dogName(dogId)})? Tätä ei voi perua.`,
+      text: `Poistetaanko lomake ${fmtDate(date)} (${dogName(dogId)})?${n ? ` Myös ${plural(n, 'kuva', 'kuvaa')} poistetaan.` : ''} Tätä ei voi perua.`,
       ok: 'Poista', danger: true,
     });
     if (!ok) return;
     cancelTimers(S.formKey + '|');
     const ref = formRef(dogId, date);
     go(dogHash(dogId));
-    write(deleteDoc(ref));
+    // Delete the form together with its photos, so nothing is left orphaned.
+    write((async () => {
+      const ps = await getDocs(photosCol(dogId, date));
+      const batch = writeBatch(db);
+      ps.forEach(p => batch.delete(p.ref));
+      batch.delete(ref);
+      await batch.commit();
+    })());
     toast('Lomake poistettu');
   });
 }
+
+// ── KUVAT: lisäys, pakkaus, näyttö ────────────────────────
+function sortedPhotos() {
+  return [...S.photos.values()]
+    .filter(p => typeof p.data === 'string' && PHOTO_RE.test(p.data))
+    .sort((a, b) => ((tsToDate(a.createdAt)?.getTime() || 0) - (tsToDate(b.createdAt)?.getTime() || 0)) || a.id.localeCompare(b.id));
+}
+
+function renderPhotos(body) {
+  const grid = $('#photo-grid', body);
+  if (!grid) return;
+  if (lbIndex >= 0) drawLightbox();
+  const photos = sortedPhotos();
+  const sig = photos.map(p => p.id).join(',') + '|' + S.uploading + '|' + S.photosLoaded;
+  if (sig === S.photoSig) return; // nothing changed → don't re-decode images
+  S.photoSig = sig;
+
+  let html;
+  if (!S.photosLoaded) {
+    html = '<div class="thumb uploading"><div class="spinner"></div></div>';
+  } else {
+    html = photos.map((p, i) => `<button class="thumb" data-i="${i}" aria-label="Kuva ${i + 1}"><img src="${p.data}" alt="" decoding="async"></button>`).join('');
+    for (let i = 0; i < S.uploading; i++) html += '<div class="thumb uploading"><div class="spinner"></div></div>';
+    if (photos.length + S.uploading < MAX_PHOTOS) {
+      html += `<button class="thumb add" id="add-photo">${ICON.camera}<span>Lisää kuva</span></button>`;
+    }
+  }
+  grid.innerHTML = html;
+  $('#photo-count', body).textContent = S.photosLoaded ? `${photos.length} / ${MAX_PHOTOS}` : '';
+  grid.querySelectorAll('.thumb[data-i]').forEach(b => b.addEventListener('click', () => openLightbox(+b.dataset.i)));
+  $('#add-photo', grid)?.addEventListener('click', () => $('#photo-input', body).click());
+}
+
+async function addPhotos(files, body) {
+  files = files.filter(f => f.type.startsWith('image/') || !f.type);
+  if (!files.length || !S.form) return;
+  const room = MAX_PHOTOS - S.photos.size - S.uploading;
+  if (room <= 0) { toast(`Enintään ${MAX_PHOTOS} kuvaa per lomake`); return; }
+  if (files.length > room) toast(`Lisätään ${room} kuvaa (enintään ${MAX_PHOTOS})`);
+
+  const { dogId, date } = S.route;
+  const key = S.formKey;
+  for (const file of files.slice(0, room)) {
+    S.uploading++; renderPhotos(body);
+    try {
+      const img = await compressImage(file);
+      write(setDoc(doc(photosCol(dogId, date)), { ...img, createdAt: serverTimestamp() }));
+    } catch (err) {
+      console.error('Photo failed:', err);
+      toast('Kuvan käsittely epäonnistui');
+    } finally {
+      if (S.formKey === key) { S.uploading = Math.max(0, S.uploading - 1); renderPhotos(body); }
+    }
+  }
+}
+
+async function loadImage(file) {
+  try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch {
+    return await new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const im = new Image();
+      im.onload = () => { URL.revokeObjectURL(url); resolve(im); };
+      im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Kuvaa ei voitu lukea')); };
+      im.src = url;
+    });
+  }
+}
+
+// Shrink until it fits: try a few size/quality steps.
+async function compressImage(file) {
+  const src = await loadImage(file);
+  const sw = src.width, sh = src.height;
+  try {
+    for (const [max, q] of [[1280, 0.75], [1280, 0.62], [1024, 0.6], [800, 0.55]]) {
+      const s = Math.min(1, max / Math.max(sw, sh));
+      const w = Math.round(sw * s), h = Math.round(sh * s);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(src, 0, 0, w, h);
+      const data = c.toDataURL('image/jpeg', q);
+      if (data.length <= PHOTO_MAX_CHARS) return { data, w, h };
+    }
+    throw new Error('Kuva on liian suuri');
+  } finally {
+    if (src.close) src.close();
+  }
+}
+
+// Lightbox
+const lb = $('#lightbox'), lbImg = $('#lb-img'), lbCount = $('#lb-count');
+const lbPrev = $('#lb-prev'), lbNext = $('#lb-next'), lbDel = $('#lb-del');
+let lbIndex = -1, lbShownId = null;
+lbDel.innerHTML = ICON.trash + 'Poista';
+
+function openLightbox(i) { lbIndex = i; lbShownId = null; lb.classList.add('open'); drawLightbox(); }
+function closeLightbox() {
+  if (lbIndex < 0) return;
+  lbIndex = -1; lbShownId = null;
+  lb.classList.remove('open');
+  lbImg.removeAttribute('src');
+}
+function drawLightbox() {
+  const ph = sortedPhotos();
+  if (!ph.length) { closeLightbox(); return; }
+  // Stay on the same photo if others were added/removed meanwhile.
+  if (lbShownId) { const j = ph.findIndex(p => p.id === lbShownId); if (j >= 0) lbIndex = j; }
+  lbIndex = Math.max(0, Math.min(lbIndex, ph.length - 1));
+  const p = ph[lbIndex];
+  if (lbShownId !== p.id) { lbImg.src = p.data; lbShownId = p.id; }
+  lbCount.textContent = `Kuva ${lbIndex + 1} / ${ph.length}`;
+  lbPrev.hidden = lbIndex === 0;
+  lbNext.hidden = lbIndex === ph.length - 1;
+}
+function lbStep(d) { if (lbIndex < 0) return; lbIndex += d; lbShownId = null; drawLightbox(); }
+
+$('#lb-close').addEventListener('click', closeLightbox);
+lbPrev.addEventListener('click', () => lbStep(-1));
+lbNext.addEventListener('click', () => lbStep(1));
+lb.addEventListener('click', e => { if (e.target === lb) closeLightbox(); });
+lbDel.addEventListener('click', async () => {
+  const p = sortedPhotos()[lbIndex];
+  if (!p) return;
+  const ok = await confirmPopup({ title: 'Poista kuva', text: 'Poistetaanko tämä kuva? Tätä ei voi perua.', ok: 'Poista', danger: true });
+  if (!ok) return;
+  const { dogId, date } = S.route;
+  lbShownId = null;
+  write(deleteDoc(doc(photosCol(dogId, date), p.id)));
+  toast('Kuva poistettu');
+});
+let touchX = null;
+lb.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+lb.addEventListener('touchend', e => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if (Math.abs(dx) > 50) lbStep(dx < 0 ? 1 : -1);
+});
+document.addEventListener('keydown', e => {
+  if (lbIndex < 0 || overlay.style.display === 'flex') return;
+  if (e.key === 'Escape') closeLightbox();
+  else if (e.key === 'ArrowLeft') lbStep(-1);
+  else if (e.key === 'ArrowRight') lbStep(1);
+});
 
 // ── SETUP NOTICE ──────────────────────────────────────────
 function renderSetup() {
