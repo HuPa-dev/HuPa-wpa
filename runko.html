@@ -330,6 +330,8 @@
   .ts-color-2km td:first-child { border-left: 3px solid rgba(96, 165, 250, 0.55); }
   .ts-color-5km td { background: rgba(248, 113, 113, 0.08); }
   .ts-color-5km td:first-child { border-left: 3px solid rgba(248, 113, 113, 0.55); }
+  .ts-color-tauko td { background: rgba(194, 113, 248, 0.08); }
+  .ts-color-tauko td:first-child { border-left: 3px solid rgba(172, 113, 248, 0.55); }
 
   /* Length picker popup */
   .length-options {
@@ -359,6 +361,7 @@
   .length-option[data-val="1km"].selected  { background: rgb(74,222,128);  border-color: rgb(74,222,128); }
   .length-option[data-val="2km"].selected  { background: rgb(96,165,250);  border-color: rgb(96,165,250); }
   .length-option[data-val="5km"].selected  { background: rgb(248,113,113); border-color: rgb(248,113,113); }
+  .length-option[data-val="tauko"].selected  { background: rgb(133, 73, 168); border-color: rgb(148, 82, 192); }
 
   /* ── SUB-ROWS ── */
   .subrow td {
@@ -1351,6 +1354,7 @@ function lengthColorClass(val) {
   if (val === '1km')  return 'ts-color-1km';
   if (val === '2km')  return 'ts-color-2km';
   if (val === '5km')  return 'ts-color-5km';
+  if (val === 'tauko')  return 'ts-color-tauko';
   return '';
 }
 
@@ -1564,7 +1568,7 @@ function openLengthPopup(panel, tsid) {
   const ts = state[panel].timeslots[tsid];
   if (!ts) return;
   const current = ts.length || '';
-  const options = ['-', '500m', '1km', '2km', '5km'];
+  const options = ['-', '500m', '1km', '2km', '5km', 'tauko'];
 
   openOverlay(`
     <div class="popup-title">Pituus — ${ts.time}</div>
