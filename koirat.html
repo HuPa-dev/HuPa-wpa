@@ -144,6 +144,40 @@
   .tb-btn.primary:hover { opacity: 0.92; color: #0a0e15; }
   .tb-spacer { flex: 1; }
 
+  /* Sick leave */
+  .tb-btn.sick { border-color: var(--red); color: var(--red); background: var(--red-soft); font-weight: 600; }
+  .tb-btn.sick:hover { color: var(--red); border-color: var(--red); background: rgba(248,113,113,0.16); }
+  .tb-btn.sick-upcoming { border-color: rgba(251,191,36,0.55); border-style: dashed; color: var(--yellow); }
+  .tb-check {
+    width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0;
+    border: 2px solid var(--border-bright);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: transparent; transition: all 0.15s;
+  }
+  .tb-badge {
+    min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; background: var(--surface3); border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .tb-badge[hidden] { display: none; }
+  .tb-btn.toggle.on { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+  .tb-btn.toggle.on .tb-check { background: var(--red); border-color: var(--red); color: #0a0e15; }
+  .tb-btn.toggle.on .tb-badge { background: var(--red); border-color: var(--red); color: #0a0e15; font-weight: 700; }
+  .sick-tag {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--red); background: var(--red-soft);
+    border: 1px solid var(--red); border-radius: 4px; padding: 1px 7px;
+  }
+  .row.is-sick { border-color: rgba(248,113,113,0.45); box-shadow: inset 3px 0 0 var(--red); }
+  .sick-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .popup-input[type="date"] { color-scheme: dark; font-family: var(--mono); font-size: 15px; padding: 0 10px; }
+  .popup-input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+  @media (max-width: 900px) {
+    .tb-btn.collapse-md span { display: none; }
+    .tb-btn.collapse-md { padding: 0 12px; }
+  }
+
   .search {
     display: flex; align-items: center; gap: 8px;
     height: 44px; padding: 0 12px;
@@ -597,7 +631,7 @@ const S = {
   forms: new Map(), formsDogId: null, formsLoaded: false, formsServer: false,
   form: null, formKey: null, formLoaded: false, formBuilt: false,
   photos: new Map(), photosLoaded: false, photosServer: false, uploading: 0, photoSig: null,
-  search: '',
+  search: '', sickOnly: false,
 };
 const unsub = { dogs: null, forms: null, form: null, photos: null };
 
@@ -833,7 +867,13 @@ backBtn.addEventListener('click', () => {
 function updateDogHeading() {
   const el = $('#dog-name-h');
   if (el) el.textContent = dogName(S.route.dogId);
+  updateSickButton();
 }
+
+// Sick-leave status depends on today's date: refresh when the tablet wakes up.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && S.dogsLoaded) onData();
+});
 
 // ═════════════════════════════════════════════════════════
 // PÄÄSIVU — KOIRALISTA
@@ -848,14 +888,24 @@ function renderHome() {
         <label class="search">${ICON.search}
           <input id="dog-search" type="search" placeholder="Hae nimellä" value="${esc(S.search)}" autocomplete="off" enterkeyhint="search">
         </label>
+        <button class="tb-btn toggle ${S.sickOnly ? 'on' : ''}" id="sick-toggle" aria-pressed="${S.sickOnly}" title="Näytä vain saikulla olevat koirat">
+          <span class="tb-check">✓</span><span>Saikulla</span><span class="tb-badge" id="sick-badge" hidden></span>
+        </button>
         <div class="tb-spacer"></div>
-        <button class="tb-btn collapse" id="export-btn" title="Vie varmuuskopio">${ICON.download}<span>Vie varmuuskopio</span></button>
+        <button class="tb-btn collapse-md" id="export-btn" title="Vie varmuuskopio">${ICON.download}<span>Vie varmuuskopio</span></button>
       </div>
       <div class="list" id="list" data-fresh="1"></div>
     </section>`;
 
   $('#add-dog').addEventListener('click', openAddDog);
   $('#export-btn').addEventListener('click', openExport);
+  $('#sick-toggle').addEventListener('click', e => {
+    S.sickOnly = !S.sickOnly;
+    e.currentTarget.classList.toggle('on', S.sickOnly);
+    e.currentTarget.setAttribute('aria-pressed', S.sickOnly);
+    $('#list').dataset.fresh = '1';
+    renderDogList();
+  });
   const input = $('#dog-search');
   input.addEventListener('input', () => { S.search = input.value; renderDogList(); });
   input.addEventListener('keydown', e => {
@@ -869,8 +919,79 @@ function renderHome() {
 
 function filteredDogs() {
   const q = S.search.trim().toLowerCase();
-  const dogs = [...S.dogs.values()].sort(byName);
+  let dogs = [...S.dogs.values()].sort(byName);
+  if (S.sickOnly) dogs = dogs.filter(d => sickState(d) === 'active');
   return q ? dogs.filter(d => d.name.toLowerCase().includes(q)) : dogs;
+}
+
+// ── SAIKKU ────────────────────────────────────────────────
+// Stored on the dog: sickFrom (YYYY-MM-DD), sickTo (YYYY-MM-DD or null = open-ended).
+// 'active' = sick today, 'upcoming' = starts later, 'none' = not set / already ended.
+function sickState(d) {
+  const f = d && d.sickFrom, t = d && d.sickTo;
+  if (!f || !DATE_RE.test(f)) return 'none';
+  const today = todayStr();
+  if (t && t < today) return 'none';
+  return f > today ? 'upcoming' : 'active';
+}
+function sickLabel(d) {
+  if (sickState(d) === 'none') return 'Saikku – -.-.- / -.-.-';
+  return `Saikku – ${fmtDate(d.sickFrom)} / ${d.sickTo ? fmtDate(d.sickTo) : '-.-.-'}`;
+}
+
+function updateSickButton() {
+  const btn = $('#sick-btn');
+  if (!btn) return;
+  const d = S.dogs.get(S.route.dogId);
+  const st = sickState(d);
+  btn.querySelector('span').textContent = sickLabel(d);
+  btn.classList.toggle('sick', st === 'active');
+  btn.classList.toggle('sick-upcoming', st === 'upcoming');
+  btn.title = st === 'active' ? 'Koira on saikulla' : st === 'upcoming' ? 'Saikku alkaa myöhemmin' : 'Merkitse saikku';
+}
+
+function openSickLeave() {
+  const dogId = S.route.dogId;
+  const dog = S.dogs.get(dogId);
+  if (!dog) return;
+  const st = sickState(dog);
+  const from = st !== 'none' ? dog.sickFrom : todayStr();
+  const to = st !== 'none' ? (dog.sickTo || '') : '';
+  openOverlay(`
+    <div class="popup-title">Saikku – ${esc(dog.name)}</div>
+    <div class="sick-fields">
+      <div class="popup-field">
+        <label class="popup-label" for="sick-from">Alkaa</label>
+        <input class="popup-input" id="sick-from" type="date" value="${from}">
+      </div>
+      <div class="popup-field">
+        <label class="popup-label" for="sick-to">Päättyy</label>
+        <input class="popup-input" id="sick-to" type="date" value="${to}" min="${from}">
+      </div>
+    </div>
+    <p class="popup-note">Jätä päättymispäivä tyhjäksi, jos saikun pituus ei ole vielä tiedossa.</p>
+    <div class="popup-error" id="err"></div>
+    <div class="popup-actions">
+      ${st !== 'none' ? `<button class="btn btn-danger left" id="sick-clear">Poista saikku</button>` : ''}
+      <button class="btn btn-secondary" data-close>Peruuta</button>
+      <button class="btn btn-primary" id="ok">Tallenna</button>
+    </div>`);
+  const fromEl = $('#sick-from'), toEl = $('#sick-to');
+  fromEl.addEventListener('change', () => { toEl.min = fromEl.value; $('#err').textContent = ''; });
+  toEl.addEventListener('change', () => { $('#err').textContent = ''; });
+  $('#ok').addEventListener('click', () => {
+    const f = fromEl.value, t = toEl.value || null;
+    if (!DATE_RE.test(f)) { $('#err').textContent = 'Valitse alkamispäivä.'; return; }
+    if (t && t < f) { $('#err').textContent = 'Päättymispäivä ei voi olla ennen alkamispäivää.'; return; }
+    write(updateDoc(dogRef(dogId), { sickFrom: f, sickTo: t }));
+    closeOverlay();
+    toast('Saikku tallennettu');
+  });
+  $('#sick-clear')?.addEventListener('click', () => {
+    write(updateDoc(dogRef(dogId), { sickFrom: null, sickTo: null }));
+    closeOverlay();
+    toast('Saikku poistettu');
+  });
 }
 
 function highlight(name, q) {
@@ -888,20 +1009,32 @@ function renderDogList() {
   const dogs = filteredDogs();
   const anim = list.dataset.fresh === '1' ? 'anim' : '';
 
+  const sickCount = [...S.dogs.values()].filter(d => sickState(d) === 'active').length;
+  const badge = $('#sick-badge');
+  if (badge) { badge.textContent = sickCount; badge.hidden = !sickCount; }
+
   if (!S.dogs.size) {
     list.innerHTML = emptyHTML('🐾', 'Ei koiria vielä.', 'Lisää ensimmäinen koira painamalla <b>+ Lisää koira</b>.');
   } else if (!dogs.length) {
-    list.innerHTML = emptyHTML('🔍', `Ei osumia haulle “${esc(S.search.trim())}”.`);
+    list.innerHTML = S.sickOnly && !q
+      ? emptyHTML('💚', 'Yksikään koira ei ole saikulla.')
+      : emptyHTML('🔍', `Ei osumia haulle “${esc(S.search.trim())}”${S.sickOnly ? ' saikulla olevista' : ''}.`);
   } else {
     list.dataset.fresh = '0';
-    const head = `<div class="list-count">${q ? plural(dogs.length, 'osuma', 'osumaa') : plural(dogs.length, 'koira', 'koiraa')}</div>`;
+    let headTxt = q ? plural(dogs.length, 'osuma', 'osumaa') : plural(dogs.length, 'koira', 'koiraa');
+    if (S.sickOnly) headTxt += ' saikulla';
+    const head = `<div class="list-count">${headTxt}</div>`;
     list.innerHTML = head + dogs.map((d, i) => {
       const count = d.count || 0;
-      const meta = count
+      const st = sickState(d);
+      let meta = '';
+      if (st === 'active') meta += `<span class="sick-tag">SAIKULLA</span>${d.sickTo ? `<span>${fmtShort(d.sickTo)} asti</span><span>·</span>` : ''}`;
+      else if (st === 'upcoming') meta += `<span class="chip yellow">Saikku alkaa ${fmtShort(d.sickFrom)}</span>`;
+      meta += count
         ? `<span>${plural(count, 'lomake', 'lomaketta')}</span><span>·</span><span>viimeksi ${d.lastDate ? fmtDate(d.lastDate) : '—'}</span>`
         : '<span>Ei lomakkeita</span>';
       return `
-        <a class="row ${anim}" href="${dogHash(d.id)}" style="--i:${Math.min(i, 20)}">
+        <a class="row ${anim} ${st === 'active' ? 'is-sick' : ''}" href="${dogHash(d.id)}" style="--i:${Math.min(i, 20)}">
           <div class="avatar" style="--h:${hueOf(d.name)}">${esc(d.name.trim().charAt(0).toUpperCase() || '?')}</div>
           <div class="row-main">
             <div class="row-title">${highlight(d.name, q)}</div>
@@ -1009,7 +1142,7 @@ async function doExport(fmt, btn) {
         return form;
       }));
       forms.sort((a, b) => a.date.localeCompare(b.date));
-      out.push({ id: d.id, name: d.name, createdAt: isoTs(d.createdAt), forms });
+      out.push({ id: d.id, name: d.name, createdAt: isoTs(d.createdAt), sickFrom: d.sickFrom || null, sickTo: d.sickTo || null, forms });
     }
     const stamp = todayStr();
     if (fmt === 'json') {
@@ -1043,6 +1176,7 @@ function renderDog() {
       <div class="toolbar" id="dog-toolbar">
         <button class="tb-btn primary" id="add-date">${ICON.plus}<span>Lisää päivä</span></button>
         <button class="tb-btn" id="search-date">${ICON.calendar}<span>Hae päivä</span></button>
+        <button class="tb-btn" id="sick-btn"><span>Saikku – -.-.- / -.-.-</span></button>
         <div class="tb-spacer"></div>
         <button class="tb-btn collapse" id="edit-dog" title="Muokkaa koiraa">${ICON.edit}<span>Muokkaa</span></button>
       </div>
@@ -1051,6 +1185,7 @@ function renderDog() {
   updateDogHeading();
   $('#add-date').addEventListener('click', () => openCalendar('add'));
   $('#search-date').addEventListener('click', () => openCalendar('search'));
+  $('#sick-btn').addEventListener('click', openSickLeave);
   $('#edit-dog').addEventListener('click', openEditDog);
   renderFormList();
 }
@@ -1273,7 +1408,7 @@ function buildFormHTML() {
         <div class="field-title">Kuvat</div>
         <span class="photo-count" id="photo-count"></span>
       </div>
-      <div class="field-sub">Lisää kuva vain, kun siitä on hyötyä koiran hoidossa.</div>
+      <div class="field-sub">Lisää kuva vain, kun siitä on hyötyä koiran hoidossa – esim. haava, iho-ongelma tai poikkeava uloste.</div>
       <div class="photo-grid" id="photo-grid"></div>
       <input type="file" id="photo-input" accept="image/*" multiple hidden>
     </div>
