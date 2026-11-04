@@ -143,15 +143,11 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(226, 125, 67, 0.12);
-  color: #e27d43;
+  background: rgba(226, 125, 67, 0.13);
   display: grid;
   place-items: center;
-}
-
-.rule-icon svg{
-  width: 22px;
-  height: 22px;
+  font-size: 1.3rem;
+  line-height: 1;
 }
 
 .rule-text{
