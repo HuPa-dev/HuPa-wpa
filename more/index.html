@@ -13,8 +13,8 @@
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Husky Park — More</title>
-        <link rel="stylesheet" href="../src/style.css?v=dev2" />
-        <link rel="stylesheet" href="src/more-style.css?v=dev1" />
+        <link rel="stylesheet" href="../src/style.css?v=dev3" />
+        <link rel="stylesheet" href="src/more-style.css?v=dev2" />
         <link rel="stylesheet" href="https://use.typekit.net/itq8knf.css">
         <!-- Force light mode -->
         <meta name="color-scheme" content="light">
@@ -96,12 +96,15 @@
 
 
         <!-- FAQ popup -->
-        <div class="more-popup" id="faqPopup" hidden>
-            <div class="more-popup-panel">
-                <button class="more-popup-close" data-close-popup>&times;</button>
-                <div class="more-popup-scroll">
+        <div class="more-popup sheet-overlay" id="faqPopup" hidden>
+            <div class="more-popup-panel sheet" role="dialog" aria-modal="true">
+                <div class="sheet-grabber" aria-hidden="true"></div>
+                <button class="more-popup-close sheet-close" data-close-sheet aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+                <div class="more-popup-scroll sheet-scroll">
                     <div class="more-popup-inner">
-                        <h2 class="more-popup-title">Frequently Asked Questions</h2>
+                        <h2 class="more-popup-title sheet-title">Frequently Asked Questions</h2>
 
                         <div class="faq-list">
                             <div class="faq-item">
@@ -155,15 +158,17 @@
         </div>
 
         <!-- Reserve a Table popup -->
-        <div class="more-popup" id="tablePopup" hidden>
-            <div class="more-popup-panel" style="--accent:#c8724f;">
-                <button class="more-popup-close" data-close-popup>&times;</button>
-                <div class="more-popup-scroll">
+        <div class="more-popup sheet-overlay" id="tablePopup" hidden>
+            <div class="more-popup-panel sheet" role="dialog" aria-modal="true" style="--accent:#c8724f;">
+                <div class="sheet-grabber" aria-hidden="true"></div>
+                <button class="more-popup-close sheet-close" data-close-sheet aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+                <div class="more-popup-scroll sheet-scroll">
                     <div class="more-popup-inner">
-                        <h2 class="more-popup-title">Reserve a Table</h2>
+                        <h2 class="more-popup-title sheet-title">Reserve a Table</h2>
                         <p>Round off your day with dinner at Musher's Tavern, our restaurant stays open for evening dining after the park closes. Reserve your table below.</p>
-                        <br>
-                        <a href="https://mushers.fi/reservations/">Learn more about the dinner at our website.</a>
+                        <a class="more-inline-link" href="https://mushers.fi/reservations/" target="_blank" rel="noopener">Learn more about dinner on our website ↗</a>
 
                         <div class="bokun-embed" id="bokunEmbedTarget">
                             <p class="bokun-loading">Loading booking calendar…</p>
@@ -174,14 +179,21 @@
         </div>
 
         <!-- Need Help popup -->
-        <div class="more-popup" id="helpPopup" hidden>
-            <div class="more-popup-panel" style="--accent:#202738;">
-                <button class="more-popup-close" data-close-popup>&times;</button>
-                <div class="more-popup-scroll">
+        <div class="more-popup sheet-overlay" id="helpPopup" hidden>
+            <div class="more-popup-panel sheet" role="dialog" aria-modal="true" style="--accent:#202738;">
+                <div class="sheet-grabber" aria-hidden="true"></div>
+                <button class="more-popup-close sheet-close" data-close-sheet aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+                <div class="more-popup-scroll sheet-scroll">
                     <div class="more-popup-inner">
-                        <h2 class="more-popup-title">Need Help?</h2>
+                        <h2 class="more-popup-title sheet-title">Need Help?</h2>
                         <p>The fastest way to reach us is to flag down any staff member wearing a Husky Park jacket, they're on hand throughout the park.</p>
-                        <p>For mobile inquiries, reach us at +358 44 755 7736</p>
+                        <p>For mobile inquiries, give us a call:</p>
+                        <a class="sheet-cta" href="tel:+358447557736">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+                            <span>+358 44 755 7736</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -210,6 +222,7 @@
         </div>
 
     <script src="../src/loader.js"></script>
+    <script src="../src/sheet.js"></script>
     <script src="src/more.js"></script>
     </body>
 

@@ -12,9 +12,9 @@
         </script>
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Test</title>
-        <link rel="stylesheet" href="../src/style.css?v=dev2" />
-        <link rel="stylesheet" href="src/guide-styles.css?v=dev2" />
+        <title>Husky Park — Guide</title>
+        <link rel="stylesheet" href="../src/style.css?v=dev3" />
+        <link rel="stylesheet" href="src/guide-styles.css?v=dev3" />
         <link rel="stylesheet" href="https://use.typekit.net/itq8knf.css">
         <!-- Force light mode -->
         <meta name="color-scheme" content="light">
@@ -213,7 +213,7 @@
             const groupHeader = groupIndex !== -1
                 ? `<li class="rule-group" role="presentation"><span class="rule-group-label">${t.groups[groupIndex]}</span></li>`
                 : '';
-            return `${groupHeader}<li class="rule"><span class="rule-icon" aria-hidden="true">${RULE_ICONS[i]}</span><span class="rule-text">${rule}</span></li>`;
+            return `${groupHeader}<li class="rule" style="animation-delay:${i * 35}ms"><span class="rule-icon" aria-hidden="true">${RULE_ICONS[i]}</span><span class="rule-text">${rule}</span></li>`;
         }).join('');
 
         document.querySelectorAll('.lang-pill').forEach(btn => {

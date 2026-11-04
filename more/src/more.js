@@ -6,33 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function openPopup(id) {
     const popup = document.getElementById(id);
     if (!popup) return;
-    popup.hidden = false;
-    const scroll = popup.querySelector('.more-popup-scroll');
-    if (scroll) scroll.scrollTop = 0;
+    Sheet.open(popup);
     if (id === 'tablePopup') loadBokunWidget();
-  }
-
-  function closePopup(popup) {
-    popup.hidden = true;
   }
 
   document.querySelectorAll('[data-open-popup]').forEach(trigger => {
     trigger.addEventListener('click', () => openPopup(trigger.dataset.openPopup));
-  });
-
-  popups.forEach(popup => {
-    popup.querySelectorAll('[data-close-popup]').forEach(btn => {
-      btn.addEventListener('click', () => closePopup(popup));
-    });
-    popup.addEventListener('click', e => {
-      if (e.target === popup) closePopup(popup);
-    });
-  });
-
-  window.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    const open = popups.find(p => !p.hidden);
-    if (open) closePopup(open);
   });
 
   // FAQ accordion - each question toggles independently. Nothing else on the

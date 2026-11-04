@@ -32,66 +32,44 @@
   display: block;
 }
 
-.popup {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.5);
-  align-items: center;
-  justify-content: center;
-  z-index: 998;
-  pointer-events: auto;
-}
-
+/*----- PIN POPUP (bottom sheet - base styles in src/style.css) ------*/
 .popup-panel {
-  width: 90vw;
-  height: 70vh;
-  background: #fff5e4;
-  border-radius: 20px;
-  padding: 1rem;
-  position: relative;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 3vh;
-  margin-bottom: auto;
-  pointer-events: auto;
-  z-index: 999;
+  max-height: 72%;
 }
-.popup-panel h2{
-  font-size: 1.8em;
+.popup-head {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin-bottom: .55rem;
 }
-
-.close{
-  display: inline;
-  margin-left: 90%;
-  margin-top: 1%;
-  border-style: none;
+.popup-num {
+  flex: 0 0 auto;
   width: 30px;
   height: 30px;
-  border-radius: 20%;
-  background-color: transparent;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'aquavit', sans-serif;
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--hp-navy);
+  background: #efe2ca;
+  border: 2.5px solid var(--accent);
 }
-.popup h2{
-  margin-top: -12%;
-  margin-left: 1%;
+.popup-num:empty { display: none; }
+.popup-eyebrow {
+  font-family: 'aquavit', sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
-
-.popup-content{
-  height: 90%;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding-top: 0.2em;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
-}
-.popup-text{
-  flex: 1;
-  text-align: left;
-  overflow-y: auto;
-}
-.popup-link{
-  align-self: center;
-  margin-top: auto;
+.popup-text {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: rgba(32, 39, 56, .82);
+  margin: 0;
 }
 
 /*----- HOTSPOTS (now real SVG groups placed directly in Illustrator - no more manual CSS coordinates) ------*/
@@ -115,6 +93,24 @@
   stroke-width: 4.5px;
 }
 
+/* Invisible, larger tap target cloned from each pin (map-dynamic-info.js) */
+.hotspot .hit-area {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+.hotspot circle:first-of-type {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform .3s var(--hp-ease-spring, ease);
+}
+.hotspot.selected circle:first-of-type {
+  transform: scale(1.25);
+}
+.hotspot.selected .pulse-ring {
+  animation: pin-pulse 1.3s ease-out infinite;
+}
+
 /* Pulse ring: cloned from each pin's own circle at runtime (same cx/cy/r), so it always matches the pin exactly */
 .hotspot .pulse-ring {
   fill: none;
@@ -135,17 +131,18 @@
 /*----   LEGEND SHEET   -----*/
 .legend-sheet {
   flex: 0 0 auto;
-  background: #fff5e4;
-  border-top: 2px solid #fff;
-  box-shadow: 0 -4px 16px rgba(0,0,0,.12);
-  overflow: hidden;
-  height: 52px;
-  transition: height .35s cubic-bezier(.3,.9,.4,1);
   position: relative;
   z-index: 500;
+  margin-top: -20px;              /* overlap the map so the rounded corners float over it */
+  height: 60px;
+  background: var(--hp-cream);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -8px 24px rgba(32, 39, 56, .14);
+  overflow: hidden;
+  transition: height .4s var(--hp-ease-out);
 }
 .legend-sheet.expanded {
-  height: 46vh;
+  height: min(52%, 420px);
 }
 
 .legend-handle {
@@ -156,38 +153,50 @@
   justify-content: center;
   gap: .5em;
   width: 100%;
-  height: 52px;
+  height: 60px;
+  padding-top: 8px;
   cursor: pointer;
   font-family: 'aquavit', sans-serif;
-  font-size: 1.05em;
-  color: #202738;
+  font-size: 1.05rem;
+  letter-spacing: .02em;
+  color: var(--hp-navy);
   -webkit-tap-highlight-color: transparent;
   position: relative;
 }
+.legend-handle:active { opacity: .7; }
 .legend-handle .grip {
   position: absolute;
-  top: 8px;
+  top: 9px;
   left: 50%;
   transform: translateX(-50%);
-  width: 40px;
-  height: 4px;
-  border-radius: 2px;
-  background: #d8c3a5;
+  width: 42px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(32, 39, 56, .16);
 }
 .legend-handle .chevron {
-  transition: transform .35s ease;
-  font-size: .8em;
-  display: inline-block;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--hp-sand);
+  font-size: .6rem;
+  transition: transform .4s var(--hp-ease-spring, ease);
 }
 .legend-sheet.expanded .legend-handle .chevron {
   transform: rotate(180deg);
 }
 
 .legend-list {
-  height: calc(46vh - 52px);
+  height: calc(100% - 60px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 0 1rem 1rem;
+  padding: 0 .75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
 }
 
 .legend-row {
@@ -195,30 +204,32 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: .75em;
+  gap: .8em;
   width: 100%;
-  padding: .6em .2em;
-  border-bottom: 1px solid #ecdcc2;
+  padding: .7em .8em;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(32, 39, 56, .06);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: transform .12s ease, background-color .15s ease;
 }
-.legend-row:last-child { border-bottom: none; }
-.legend-row:active,
-.legend-row:focus-visible { background: #f3e4c9; }
+.legend-row:active { transform: scale(.98); background: #fbf1e1; }
+.legend-row:focus-visible { outline: 2px solid var(--pin-color, #c8724f); outline-offset: 1px; }
 
 .legend-num {
   flex: 0 0 auto;
-  width: 1.8em;
-  height: 1.8em;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-family: 'aquavit', sans-serif;
   font-weight: 700;
-  font-size: .95em;
+  font-size: .9rem;
   background: #efe2ca;
   color: #212738;
-  border: 2px solid var(--pin-color, #c8724f);
+  border: 2.5px solid var(--pin-color, #c8724f);
 }
 
 .legend-copy {
@@ -226,13 +237,23 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 .legend-title {
   font-family: 'aquavit', sans-serif;
-  font-size: 1em;
+  font-size: 1rem;
+  line-height: 1.2;
 }
 .legend-desc {
-  font-size: .78em;
-  opacity: .75;
+  font-size: .8rem;
+  color: rgba(32, 39, 56, .65);
   line-height: 1.3;
+}
+.legend-row::after {
+  content: "›";
+  flex: 0 0 auto;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--pin-color, #c8724f);
+  opacity: .7;
 }

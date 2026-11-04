@@ -13,8 +13,8 @@
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Husky Park Map</title>
-        <link rel="stylesheet" href="../src/style.css?v=dev2" />
-        <link rel="stylesheet" href="src/map-style.css?v=dev4" />
+        <link rel="stylesheet" href="../src/style.css?v=dev3" />
+        <link rel="stylesheet" href="src/map-style.css?v=dev5" />
         <link rel="stylesheet" href="https://use.typekit.net/itq8knf.css">
         <!-- Force light mode -->
         <meta name="color-scheme" content="light">
@@ -33,14 +33,25 @@
         </div>
 
 
-        <div class="popup" hidden>
-            <div class="popup-panel">
-                <button class="close">×</button>
-
-                <h2 class="popup-title">TEST TITLE</h2>
-                <div class="popup-content">
-                <p class="popup-text">Lorem ipsum dolor amet sin jotain en muista pidemmälle taisi mennä pari sanaa väärinkin lopusta jo mutta tässä nyt testitekstiä.</p>
-                <a class="popup-link btn" href="#">Learn more</a>
+        <div class="popup sheet-overlay sheet-light" hidden>
+            <div class="popup-panel sheet" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+                <div class="sheet-grabber" aria-hidden="true"></div>
+                <button class="close sheet-close" data-close-sheet aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+                <div class="sheet-scroll">
+                    <div class="sheet-body popup-content">
+                        <div class="popup-head">
+                            <span class="popup-num" aria-hidden="true"></span>
+                            <span class="popup-eyebrow">On the map</span>
+                        </div>
+                        <h2 class="popup-title sheet-title" id="popupTitle"></h2>
+                        <p class="popup-text"></p>
+                        <a class="popup-link sheet-cta" href="#">
+                            <span>See activity details</span>
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1575,6 +1586,7 @@
 </script>
 
 <script src="../src/loader.js"></script>
+<script src="../src/sheet.js"></script>
 <script src="src/map-dynamic-info.js"></script>
 
 </html>

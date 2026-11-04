@@ -7,20 +7,52 @@ const link   = popup.querySelector('.popup-link');
 const mapEl  = document.querySelector('.map');
 const svgEl  = mapEl.querySelector('svg');
 
+const popupPanel = popup.querySelector('.popup-panel');
+const popupNum   = popup.querySelector('.popup-num');
+let selectedSpot = null;
+
+function legendRowFor(id) {
+  return document.querySelector(`.legend-row[data-target="${CSS.escape(id)}"]`);
+}
+
 function openPopupFor(hotspot) {
   title.textContent = hotspot.dataset.title;
   text.innerHTML = hotspot.dataset.text;
 
+  // Number + colour come from the matching legend row so they always agree with the map
+  const row = legendRowFor(hotspot.id);
+  const color = row ? row.style.getPropertyValue('--pin-color') : '';
+  popupPanel.style.setProperty('--accent', color || '#e27d43');
+  popupNum.textContent = row ? row.querySelector('.legend-num').textContent : '';
+
   if (hotspot.dataset.link) {
     link.href = hotspot.dataset.link;
-    link.style.display = "inline-block";
+    link.style.display = '';
   } else {
     link.removeAttribute('href');
-    link.style.display = "none";
+    link.style.display = 'none';
   }
 
-  popup.hidden = false;
+  if (selectedSpot) selectedSpot.classList.remove('selected');
+  selectedSpot = hotspot;
+  hotspot.classList.add('selected');
+
+  Sheet.open(popup);
+
+  // Once the sheet has laid out, slide the map so the pin sits in the visible strip above it
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    // use layout height, not getBoundingClientRect - the sheet is still mid slide-in here
+    const sheetTop = popup.getBoundingClientRect().bottom - popupPanel.offsetHeight;
+    const mapTop = mapEl.getBoundingClientRect().top;
+    const visible = Math.max(80, sheetTop - mapTop);
+    panToHotspot(hotspot, { thenPulse: false, centerY: visible / 2 });
+  }));
 }
+
+popup.addEventListener('sheet:close', () => {
+  if (selectedSpot) selectedSpot.classList.remove('selected');
+  selectedSpot = null;
+});
 
 // --- Hotspots: the pin groups themselves (placed directly in Illustrator) are the interactive elements now ---
 const hotspots = Array.from(document.querySelectorAll('.hotspot'));
@@ -33,6 +65,14 @@ hotspots.forEach(spot => {
     ring.classList.add('pulse-ring');
     ring.removeAttribute('fill');
     spot.appendChild(ring);
+
+    // Pins are tiny on a phone - add an invisible circle ~2x the size as the real tap target
+    const hit = baseCircle.cloneNode(false);
+    hit.classList.add('hit-area');
+    hit.removeAttribute('fill');
+    hit.removeAttribute('stroke');
+    hit.setAttribute('r', String(parseFloat(baseCircle.getAttribute('r') || '10') * 2));
+    spot.appendChild(hit);
   }
 
   spot.addEventListener('click', () => openPopupFor(spot));
@@ -51,8 +91,8 @@ function pulse(hotspot) {
 }
 
 // Smoothly pan the (possibly legend-shrunk) map viewport so `hotspot` ends up centered, then pulse it.
-function panToHotspot(hotspot, { thenPulse = true } = {}) {
-  const target = hotspot.querySelector('circle') || hotspot;
+function panToHotspot(hotspot, { thenPulse = true, centerY = null } = {}) {
+  const target = hotspot.querySelector('circle:not(.hit-area):not(.pulse-ring)') || hotspot;
   const pinRect = target.getBoundingClientRect();
   const mapRect = mapEl.getBoundingClientRect();
 
@@ -61,7 +101,7 @@ function panToHotspot(hotspot, { thenPulse = true } = {}) {
 
   mapEl.scrollTo({
     left: pinX - mapEl.clientWidth / 2,
-    top: pinY - mapEl.clientHeight / 2,
+    top: pinY - (centerY ?? mapEl.clientHeight / 2),
     behavior: 'smooth'
   });
 
@@ -82,9 +122,6 @@ function panToHotspot(hotspot, { thenPulse = true } = {}) {
   settleTimer = setTimeout(finish, 120);
 }
 
-// Close buttons and background
-popup.querySelector('.close').onclick = () => popup.hidden = true;
-popup.onclick = e => e.target === popup && (popup.hidden = true);
 
 // Ensure link clicks don't bubble and get blocked by popup
 link.addEventListener('click', e => {

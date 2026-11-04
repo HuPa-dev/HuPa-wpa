@@ -4,8 +4,9 @@
 }
 
 h1.page-title {
-  padding: 1rem 1rem 0.25rem;
+  padding: 1.2rem 1rem 0.15rem;
   font-size: 2rem;
+  color: var(--hp-navy);
 }
 
 .page-subtitle {
@@ -15,7 +16,7 @@ h1.page-title {
 }
 
 .more-list {
-  padding: 0.5rem 1rem 10vh;
+  padding: 0.25rem 1rem 0.5rem;
   display: flex;
   flex-direction: column;
   gap: .9rem;
@@ -39,6 +40,7 @@ h1.page-title {
 }
 .more-card:active {
   transform: scale(.98);
+  box-shadow: var(--hp-shadow-sm);
 }
 
 .more-card-icon {
@@ -158,83 +160,41 @@ h1.page-title {
 }
 .help-icon svg { width: 100%; height: 100%; }
 
-/* ---- Popups (FAQ / Reserve a Table / Need Help) ---- */
-.more-popup {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  z-index: 998;
-  pointer-events: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3vh 5vw;
-  box-sizing: border-box;
-}
-.more-popup[hidden] {
-  display: none;
-}
-
+/* ---- Popups (FAQ / Reserve a Table / Need Help) - base sheet styles in src/style.css ---- */
 .more-popup-panel {
   --accent: #e27d43;
-  width: 100%;
-  height: 74vh;
-  max-height: 100%;
-  background: #fff;
-  border-radius: 20px;
-  position: relative;
-  overflow: hidden;
-  pointer-events: auto;
-  z-index: 999;
-  box-shadow: 0 20px 50px rgba(0,0,0,.35);
 }
-
-.more-popup-close {
-  all: unset;
-  position: absolute;
-  top: .6rem;
-  right: .7rem;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(255,255,255,.85);
-  color: #202738;
-  font-size: 1.3rem;
-  line-height: 1;
-  cursor: pointer;
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+.more-popup-panel#tablePanel,
+#tablePopup .more-popup-panel {
+  height: 92%;
 }
-
-.more-popup-scroll {
-  height: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
+#tablePopup .more-popup-scroll { flex: 1 1 auto; }
 
 .more-popup-inner {
-  padding: 1.6rem 1.1rem 1.5rem;
-}
-
-.more-popup-title {
-  font-size: 1.4rem;
-  margin-bottom: .7rem;
-  padding-right: 2rem;
+  padding: 30px 20px calc(24px + var(--safe-bottom));
 }
 
 .more-popup-inner > p {
-  font-size: .95rem;
+  font-size: .98rem;
   line-height: 1.55;
+  color: rgba(32, 39, 56, .82);
   margin-bottom: .8rem;
 }
 
+.more-inline-link {
+  display: inline-flex;
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  margin-bottom: .4rem;
+}
+
 .more-popup-note {
-  font-size: .78rem;
-  opacity: .55;
-  font-style: italic;
-  margin-top: 1rem;
+  font-size: .82rem;
+  opacity: .6;
+  text-align: center;
+  margin-top: 1.2rem;
 }
 
 /* ---- FAQ accordion ---- */
@@ -244,9 +204,15 @@ h1.page-title {
   gap: .5rem;
 }
 .faq-item {
-  border: 1px solid rgba(32, 39, 56, .1);
-  border-radius: 14px;
+  border: 1px solid rgba(32, 39, 56, .08);
+  background: #fffaf2;
+  border-radius: 16px;
   overflow: hidden;
+  transition: background-color .2s ease, border-color .2s ease;
+}
+.faq-item.open {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .faq-q {
   all: unset;
@@ -256,16 +222,26 @@ h1.page-title {
   gap: .6rem;
   width: 100%;
   box-sizing: border-box;
-  padding: .8rem .9rem;
+  padding: .95rem 1rem;
+  min-height: 52px;
   font-weight: 700;
-  font-size: .93rem;
+  font-size: .95rem;
+  line-height: 1.35;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .faq-caret {
   flex: 0 0 auto;
-  transition: transform .2s ease;
-  opacity: .6;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 14%, #fff);
+  color: var(--accent);
+  line-height: 0;
+  padding-bottom: 6px;
+  transition: transform .3s var(--hp-ease-spring);
 }
 .faq-item.open .faq-caret {
   transform: rotate(180deg);

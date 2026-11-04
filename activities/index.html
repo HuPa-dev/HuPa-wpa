@@ -13,8 +13,8 @@
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Husky Park — Activities</title>
-        <link rel="stylesheet" href="../src/style.css?v=dev2" />
-        <link rel="stylesheet" href="src/activities-style.css?v=dev4" />
+        <link rel="stylesheet" href="../src/style.css?v=dev3" />
+        <link rel="stylesheet" href="src/activities-style.css?v=dev5" />
         <link rel="stylesheet" href="https://use.typekit.net/itq8knf.css">
         <!-- Force light mode -->
         <meta name="color-scheme" content="light">
@@ -33,13 +33,16 @@
         <div class="spinner"></div>
         </div>
 
-        <div class="activity-popup" id="activityPopup" hidden>
-            <div class="activity-popup-panel">
-                <button class="activity-popup-close">×</button>
-                <div class="activity-popup-scroll">
+        <div class="activity-popup sheet-overlay" id="activityPopup" hidden>
+            <div class="activity-popup-panel sheet" role="dialog" aria-modal="true" aria-labelledby="activityPopupTitle">
+                <div class="sheet-grabber on-media" aria-hidden="true"></div>
+                <button class="activity-popup-close sheet-close on-media" data-close-sheet aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+                <div class="activity-popup-scroll sheet-scroll">
                     <div class="activity-popup-media"></div>
                     <div class="activity-popup-text">
-                        <h2 class="activity-popup-title"></h2>
+                        <h2 class="activity-popup-title sheet-title" id="activityPopupTitle"></h2>
                         <div class="activity-popup-chips"></div>
                         <div class="activity-popup-body"></div>
                     </div>
@@ -112,9 +115,9 @@
         </div>
 
         <div class="activity-card" id="mushers-rest" style="--accent:#4a8a6f">
-            <div class="activity-media no-photo" data-toggle>
+            <div class="activity-media" data-toggle>
                 <span class="activity-tag">REST STOP</span>
-                <img src="\src\img\customers-by-the-fire-1.jpg" alt="Interior of Musher's Tavern restaurant" loading="lazy" onerror="activityMediaFallback(this)" data-fallback-icon="🔥">
+                <img src="../src/img/customers-by-the-fire-1.jpg" alt="Guests warming up by the fire" loading="lazy" onerror="activityMediaFallback(this)" data-fallback-icon="🔥">
             </div>
             <button class="activity-summary" data-toggle aria-haspopup="dialog">
                 <div class="activity-summary-text">
@@ -132,9 +135,9 @@
         </div>
 
         <div class="activity-card" id="info-cabin" style="--accent:#3f57a7">
-            <div class="activity-media no-photo" data-toggle>
+            <div class="activity-media" data-toggle>
                 <span class="activity-tag">INFORMATIVE</span>
-                <img src="\src\img\kammi.jpg" alt="Fire inside the private cabin" loading="lazy" onerror="activityMediaFallback(this)" data-fallback-icon="🔥">
+                <img src="../src/img/kammi.jpg" alt="Fire inside the private cabin" loading="lazy" onerror="activityMediaFallback(this)" data-fallback-icon="🔥">
             </div>
             <button class="activity-summary" data-toggle aria-haspopup="dialog">
                 <div class="activity-summary-text">
@@ -177,6 +180,7 @@
         </div>
 
     <script src="../src/loader.js"></script>
+    <script src="../src/sheet.js"></script>
     <script src="src/activities.js"></script>
     </body>
 

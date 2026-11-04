@@ -4,8 +4,10 @@
 }
 
 h1.page-title {
-  padding: 1rem 1rem 0.25rem;
+  padding: 1.4rem 1rem 0.15rem;
   font-size: 2rem;
+  letter-spacing: .01em;
+  color: var(--hp-navy);
 }
 
 .page-subtitle {
@@ -15,7 +17,7 @@ h1.page-title {
 }
 
 .activities-list {
-  padding: 0.5rem 1rem 10vh;
+  padding: 0.25rem 1rem 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
@@ -25,14 +27,19 @@ h1.page-title {
 .activity-card {
   --accent: #c8724f;
   background: #fff;
-  border-radius: 20px;
+  border-radius: 22px;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(32, 39, 56, .1);
+  box-shadow: var(--hp-shadow-md);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.activity-card:active {
+  transform: scale(.985);
+  box-shadow: var(--hp-shadow-sm);
 }
 
 .activity-media {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   cursor: pointer;
   background: linear-gradient(155deg, var(--accent), #20273855);
@@ -117,71 +124,29 @@ h1.page-title {
   flex: 0 0 auto;
   font-size: .8rem;
   font-weight: 700;
-  color: var(--accent);
+  color: #fff;
+  background: var(--accent);
   white-space: nowrap;
-  padding-bottom: .15rem;
+  padding: .45em .85em;
+  border-radius: 999px;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 
-.activity-popup {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  z-index: 998;
-  pointer-events: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3vh 5vw;
-  box-sizing: border-box;
-}
-.activity-popup[hidden] {
-  display: none;
-}
-
+/*----- DETAIL SHEET (base styles in src/style.css) ------*/
 .activity-popup-panel {
-  --accent: #c8724f;
-  width: 100%;
-  height: 80vh;
-  max-height: 100%;
-  background: #fff;
-  border-radius: 20px;
-  position: relative;
-  overflow: hidden;
-  pointer-events: auto;
-  z-index: 999;
-  box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  max-height: 92%;
+  height: 92%;
 }
-
-.activity-popup-close {
-  all: unset;
-  position: absolute;
-  top: .6rem;
-  right: .7rem;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(255,255,255,.85);
-  color: #202738;
-  font-size: 1.3rem;
-  line-height: 1;
-  cursor: pointer;
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
-}
-
-/* Everything - photo included - lives in one scrollable column now */
 .activity-popup-scroll {
-  height: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
 }
 
 .activity-popup-media {
   position: relative;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
+  max-height: 42vh;
+  width: 100%;
   overflow: hidden;
   background: linear-gradient(155deg, var(--accent), #20273855);
 }
@@ -201,12 +166,18 @@ h1.page-title {
 }
 
 .activity-popup-text {
-  padding: 1rem 1.1rem 1.5rem;
+  position: relative;
+  margin-top: -22px;            /* card overlaps the photo slightly */
+  padding: 1.3rem 1.25rem calc(1.75rem + var(--safe-bottom));
+  background: #fff;
+  border-radius: 22px 22px 0 0;
+  font-size: 1rem;
 }
 
 .activity-popup-title {
-  font-size: 1.5rem;
-  margin-bottom: .5rem;
+  font-size: 1.6rem;
+  margin-bottom: .6rem;
+  padding-right: 0;
 }
 
 .activity-popup-chips {
@@ -216,9 +187,24 @@ h1.page-title {
   margin-bottom: .9rem;
 }
 
+.activity-popup-media .activity-tag { display: none; }
+
+.activity-popup-body {
+  color: rgba(32, 39, 56, .85);
+}
+.activity-popup-body br { display: none; }
 .activity-popup-body h2 {
-  font-size: 1.1rem;
-  margin-bottom: .4rem;
+  font-size: 1.15rem;
+  color: var(--hp-navy);
+  margin: 1.1rem 0 .45rem;
+}
+.activity-popup-body > h2:first-child { margin-top: .2rem; }
+.activity-popup-body ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  margin: .2rem 0 .8rem;
 }
 .activity-popup-body h3 {
   font-size: 1rem;
@@ -229,9 +215,23 @@ h1.page-title {
   line-height: 1.5;
 }
 .activity-popup-body li {
-  margin-left: 5vw;
-  padding-bottom: 2vh;
+  position: relative;
+  padding: .7rem .9rem .7rem 2.4rem;
+  background: color-mix(in srgb, var(--accent) 7%, #fff);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-radius: 14px;
+  font-size: .95rem;
+  line-height: 1.45;
 }
+.activity-popup-body li::before {
+  content: "🐾";
+  position: absolute;
+  left: .8rem;
+  top: .72rem;
+  font-size: .9rem;
+}
+.activity-popup-body li p { margin-bottom: .35rem; }
+.activity-popup-body li p:last-child { margin-bottom: 0; }
 .activity-popup-body img {
   width: 100%;
   border-radius: 14px;

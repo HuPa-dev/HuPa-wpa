@@ -33,3 +33,16 @@ async function pageReady() {
 }
 
 pageReady();
+
+// Expose the bottom nav's real height as --navlinks-h so every page can
+// reserve exactly the right amount of space under its content.
+(function () {
+  function setNavHeightVar() {
+    const nav = document.querySelector('.navlinks');
+    if (nav) document.documentElement.style.setProperty('--navlinks-h', nav.offsetHeight + 'px');
+  }
+  setNavHeightVar();
+  window.addEventListener('resize', setNavHeightVar);
+  window.addEventListener('load', setNavHeightVar);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(setNavHeightVar);
+})();

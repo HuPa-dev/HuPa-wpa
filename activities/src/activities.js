@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     popupChips.innerHTML = card.querySelector('.activity-chips').innerHTML;
     popupBody.innerHTML = card.querySelector('.activity-content').innerHTML;
 
-    popup.hidden = false;
+    Sheet.open(popup);
     popupScroll.scrollTop = 0;
 
     // Keep the URL in sync so the "Learn more" links from the map keep working both ways.
@@ -52,9 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function closePopup() {
-    popup.hidden = true;
-  }
+  // Clear the hash when the sheet closes so re-opening the same card from the map works
+  popup.addEventListener('sheet:close', () => {
+    if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+  });
 
   cards.forEach(card => {
     card.querySelectorAll('[data-toggle]').forEach(el => {
@@ -66,11 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  popupClose.addEventListener('click', closePopup);
-  popup.addEventListener('click', e => { if (e.target === popup) closePopup(); });
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !popup.hidden) closePopup();
-  });
 
   // Open a card's popup via URL hash (used by the map popup's "Learn more" links), once
   // its article content has actually loaded.
