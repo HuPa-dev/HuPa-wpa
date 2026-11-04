@@ -9,6 +9,31 @@ const svgEl  = mapEl.querySelector('svg');
 
 const popupPanel = popup.querySelector('.popup-panel');
 const popupNum   = popup.querySelector('.popup-num');
+const popupMedia = popup.querySelector('.popup-media');
+
+// Photo banner: each pin's photo lives in its data-photo attribute in map/index.html.
+// Empty data-photo (or a photo that fails to load) shows a coloured placeholder with data-photo-icon.
+function setPopupMedia(hotspot) {
+  const src = hotspot.dataset.photo;
+  const icon = hotspot.dataset.photoIcon || '📷';
+  const placeholder = () => {
+    popupMedia.innerHTML = '';
+    popupMedia.classList.add('no-photo');
+    const span = document.createElement('span');
+    span.className = 'placeholder-icon';
+    span.textContent = icon;
+    popupMedia.appendChild(span);
+  };
+  popupMedia.classList.remove('no-photo');
+  if (!src) { placeholder(); return; }
+  const img = new Image();
+  img.alt = '';
+  img.decoding = 'async';
+  img.onerror = placeholder;
+  img.src = src;
+  popupMedia.innerHTML = '';
+  popupMedia.appendChild(img);
+}
 let selectedSpot = null;
 
 function legendRowFor(id) {
@@ -24,6 +49,7 @@ function openPopupFor(hotspot) {
   const color = row ? row.style.getPropertyValue('--pin-color') : '';
   popupPanel.style.setProperty('--accent', color || '#e27d43');
   popupNum.textContent = row ? row.querySelector('.legend-num').textContent : '';
+  setPopupMedia(hotspot);
 
   if (hotspot.dataset.link) {
     link.href = hotspot.dataset.link;

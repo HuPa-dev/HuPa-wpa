@@ -140,8 +140,8 @@
 
 .rule-icon{
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(226, 125, 67, 0.12);
   color: #e27d43;
@@ -150,8 +150,8 @@
 }
 
 .rule-icon svg{
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 
 .rule-text{

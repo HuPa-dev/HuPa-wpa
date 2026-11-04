@@ -236,7 +236,14 @@ button{
 }
 
 
+/* Mascot banner (Guide + More): posterized 3-step arctic sky behind Haiku */
 .haiku-banner{
+  background: linear-gradient(
+    to bottom,
+    #b7d3ea 0%,   #b7d3ea 34%,
+    #cfe2f0 34%,  #cfe2f0 66%,
+    #e7f0f5 66%,  #e7f0f5 100%
+  );
   position: relative;
   width: 100%;
   margin-left: auto;
@@ -510,4 +517,31 @@ button{
   .sheet, .sheet-overlay, .navlinks a::before, .navlinks img{
     transition-duration: .01ms !important;
   }
+}
+
+/* Cream content sheet under the mascot banner - same look as the Guide tab */
+.page-sheet{
+  position: relative;
+  margin-top: -2.8vh;
+  padding: 3vh 0 0;
+  background-color: var(--hp-cream);
+  border-top: 4px solid rgb(212, 125, 67);
+}
+.page-sheet .eyebrow{
+  text-align: center;
+  font-family: 'aquavit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--hp-terracotta);
+  margin-bottom: 0.4em;
+}
+.page-sheet h1.page-title{
+  text-align: center;
+  font-size: 1.7em;
+  line-height: 1.25;
+  padding: 0 1rem .2rem;
+}
+.page-sheet .page-subtitle{
+  text-align: center;
 }
