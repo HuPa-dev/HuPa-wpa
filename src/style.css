@@ -236,14 +236,15 @@ button{
 }
 
 
-/* Mascot banner (Guide + More): posterized 3-step arctic sky behind Haiku */
+/* Mascot banner (Guide + More): whimsical posterized sky behind Haiku.
+   The sky stops 2.8vh above the banner's bottom edge - exactly where the cream
+   sheet below starts (its margin-top: -2.8vh) - so Haiku's paws still hang over
+   the orange line and he looks like he's peeking over it. */
 .haiku-banner{
-  background: linear-gradient(
-    to bottom,
-    #b7d3ea 0%,   #b7d3ea 34%,
-    #cfe2f0 34%,  #cfe2f0 66%,
-    #e7f0f5 66%,  #e7f0f5 100%
-  );
+  background-image: url("img/sky-banner.svg");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% calc(100% - 2.8vh);
   position: relative;
   width: 100%;
   margin-left: auto;

@@ -33,8 +33,15 @@
 }
 
 /*----- PIN POPUP (bottom sheet - base styles in src/style.css) ------*/
+/* On the map the sheet lives inside the map area: it stops at the top of the
+   bottom nav and sits *under* it (nav is z-index 9999), so it slides up from
+   behind the menu and the menu stays visible and usable. */
+.popup.sheet-overlay {
+  bottom: var(--navlinks-h, 64px);
+  z-index: 9000;
+}
 .popup-panel {
-  max-height: 86%;
+  max-height: 88%;
 }
 
 /* Photo banner, same treatment as the activities detail view */
@@ -67,7 +74,7 @@
   margin-top: -22px;
   background: #fff;
   border-radius: 22px 22px 0 0;
-  padding: 1.4rem 1.35rem calc(2rem + var(--safe-bottom));
+  padding: 1.4rem 1.35rem 2rem;
 }
 
 .popup-head {
