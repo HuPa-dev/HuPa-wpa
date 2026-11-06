@@ -170,6 +170,13 @@
     border: 1px solid var(--red); border-radius: 4px; padding: 1px 7px;
   }
   .row.is-sick { border-color: rgba(248,113,113,0.45); box-shadow: inset 3px 0 0 var(--red); }
+  .sick-why { color: var(--text-dim); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row.is-sick .sick-why { color: #f3a5a5; }
+  .meta-break { flex-basis: 100%; height: 0; }
+  #sick-btn { max-width: 100%; min-width: 0; }
+  #sick-btn .sick-reason { font-weight: 400; opacity: 0.85; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  #sick-btn .sick-reason[hidden] { display: none; }
+  .sick-reason-input { min-height: 104px; font-size: 16px; resize: vertical; }
   .sick-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .popup-input[type="date"] { color-scheme: dark; font-family: var(--mono); font-size: 15px; padding: 0 10px; }
   .popup-input[type="date"]::-webkit-date-and-time-value { text-align: left; }
@@ -944,10 +951,14 @@ function updateSickButton() {
   if (!btn) return;
   const d = S.dogs.get(S.route.dogId);
   const st = sickState(d);
-  btn.querySelector('span').textContent = sickLabel(d);
+  btn.querySelector('.sick-dates').textContent = sickLabel(d);
+  const reason = st !== 'none' ? (d.sickReason || '').trim() : '';
+  const rEl = btn.querySelector('.sick-reason');
+  rEl.textContent = reason ? '· ' + reason : '';
+  rEl.hidden = !reason;
   btn.classList.toggle('sick', st === 'active');
   btn.classList.toggle('sick-upcoming', st === 'upcoming');
-  btn.title = st === 'active' ? 'Koira on saikulla' : st === 'upcoming' ? 'Saikku alkaa myöhemmin' : 'Merkitse saikku';
+  btn.title = (st === 'active' ? 'Koira on saikulla' : st === 'upcoming' ? 'Saikku alkaa myöhemmin' : 'Merkitse saikku') + (reason ? ` – ${reason}` : '');
 }
 
 function openSickLeave() {
@@ -957,6 +968,7 @@ function openSickLeave() {
   const st = sickState(dog);
   const from = st !== 'none' ? dog.sickFrom : todayStr();
   const to = st !== 'none' ? (dog.sickTo || '') : '';
+  const reason = st !== 'none' ? (dog.sickReason || '') : '';
   openOverlay(`
     <div class="popup-title">Saikku – ${esc(dog.name)}</div>
     <div class="sick-fields">
@@ -970,6 +982,10 @@ function openSickLeave() {
       </div>
     </div>
     <p class="popup-note">Jätä päättymispäivä tyhjäksi, jos saikun pituus ei ole vielä tiedossa.</p>
+    <div class="popup-field">
+      <label class="popup-label" for="sick-reason">Syy</label>
+      <textarea class="textarea sick-reason-input" id="sick-reason" maxlength="300" rows="4" placeholder="esim. ontuu vasenta etutassua">${esc(reason)}</textarea>
+    </div>
     <div class="popup-error" id="err"></div>
     <div class="popup-actions">
       ${st !== 'none' ? `<button class="btn btn-danger left" id="sick-clear">Poista saikku</button>` : ''}
@@ -979,16 +995,19 @@ function openSickLeave() {
   const fromEl = $('#sick-from'), toEl = $('#sick-to');
   fromEl.addEventListener('change', () => { toEl.min = fromEl.value; $('#err').textContent = ''; });
   toEl.addEventListener('change', () => { $('#err').textContent = ''; });
-  $('#ok').addEventListener('click', () => {
+  const reasonEl = $('#sick-reason');
+  const save = () => {
     const f = fromEl.value, t = toEl.value || null;
+    const r = reasonEl.value.trim().replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n');
     if (!DATE_RE.test(f)) { $('#err').textContent = 'Valitse alkamispäivä.'; return; }
     if (t && t < f) { $('#err').textContent = 'Päättymispäivä ei voi olla ennen alkamispäivää.'; return; }
-    write(updateDoc(dogRef(dogId), { sickFrom: f, sickTo: t }));
+    write(updateDoc(dogRef(dogId), { sickFrom: f, sickTo: t, sickReason: r }));
     closeOverlay();
     toast('Saikku tallennettu');
-  });
+  };
+  $('#ok').addEventListener('click', save);
   $('#sick-clear')?.addEventListener('click', () => {
-    write(updateDoc(dogRef(dogId), { sickFrom: null, sickTo: null }));
+    write(updateDoc(dogRef(dogId), { sickFrom: null, sickTo: null, sickReason: '' }));
     closeOverlay();
     toast('Saikku poistettu');
   });
@@ -1028,8 +1047,17 @@ function renderDogList() {
       const count = d.count || 0;
       const st = sickState(d);
       let meta = '';
-      if (st === 'active') meta += `<span class="sick-tag">SAIKULLA</span>${d.sickTo ? `<span>${fmtShort(d.sickTo)} asti</span><span>·</span>` : ''}`;
-      else if (st === 'upcoming') meta += `<span class="chip yellow">Saikku alkaa ${fmtShort(d.sickFrom)}</span>`;
+      const reason = st !== 'none' ? (d.sickReason || '').trim() : '';
+      const reasonHtml = reason ? `<span class="sick-why" title="${esc(reason)}">Syy: ${esc(reason)}</span>` : '';
+      if (st === 'active') {
+        meta += `<span class="sick-tag">SAIKULLA</span>`
+          + `<span>${fmtShort(d.sickFrom)} – ${d.sickTo ? fmtShort(d.sickTo) : '?'}</span>`
+          + `<span class="meta-break"></span>`
+          + (reasonHtml ? reasonHtml + `<span class="meta-break"></span>` : '');
+      } else if (st === 'upcoming') {
+        meta += `<span class="chip yellow">Saikku alkaa ${fmtShort(d.sickFrom)}</span><span class="meta-break"></span>`
+          + (reasonHtml ? reasonHtml + `<span class="meta-break"></span>` : '');
+      }
       meta += count
         ? `<span>${plural(count, 'lomake', 'lomaketta')}</span><span>·</span><span>viimeksi ${d.lastDate ? fmtDate(d.lastDate) : '—'}</span>`
         : '<span>Ei lomakkeita</span>';
@@ -1142,7 +1170,7 @@ async function doExport(fmt, btn) {
         return form;
       }));
       forms.sort((a, b) => a.date.localeCompare(b.date));
-      out.push({ id: d.id, name: d.name, createdAt: isoTs(d.createdAt), sickFrom: d.sickFrom || null, sickTo: d.sickTo || null, forms });
+      out.push({ id: d.id, name: d.name, createdAt: isoTs(d.createdAt), sickFrom: d.sickFrom || null, sickTo: d.sickTo || null, sickReason: d.sickReason || '', forms });
     }
     const stamp = todayStr();
     if (fmt === 'json') {
@@ -1176,9 +1204,9 @@ function renderDog() {
       <div class="toolbar" id="dog-toolbar">
         <button class="tb-btn primary" id="add-date">${ICON.plus}<span>Lisää päivä</span></button>
         <button class="tb-btn" id="search-date">${ICON.calendar}<span>Hae päivä</span></button>
-        <button class="tb-btn" id="sick-btn"><span>Saikku – -.-.- / -.-.-</span></button>
+        <button class="tb-btn" id="sick-btn"><span class="sick-dates">Saikku – -.-.- / -.-.-</span><span class="sick-reason" hidden></span></button>
         <div class="tb-spacer"></div>
-        <button class="tb-btn collapse" id="edit-dog" title="Muokkaa koiraa">${ICON.edit}<span>Muokkaa</span></button>
+        <button class="tb-btn collapse-md" id="edit-dog" title="Muokkaa koiraa">${ICON.edit}<span>Muokkaa</span></button>
       </div>
       <div class="list" id="list" data-fresh="1"></div>
     </section>`;
