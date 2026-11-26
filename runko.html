@@ -332,6 +332,10 @@
   .ts-color-5km td:first-child { border-left: 3px solid rgba(248, 113, 113, 0.55); }
   .ts-color-tauko td { background: rgba(194, 113, 248, 0.08); }
   .ts-color-tauko td:first-child { border-left: 3px solid rgba(172, 113, 248, 0.55); }
+  .ts-color-hali1 td { background: rgba(45, 212, 191, 0.08); }
+  .ts-color-hali1 td:first-child { border-left: 3px solid rgba(45, 70, 212, 0.6); }
+  .ts-color-hali2 td { background: rgba(244, 114, 182, 0.08); }
+  .ts-color-hali2 td:first-child { border-left: 3px solid rgba(244, 114, 114, 0.6); }
 
   /* Length picker popup */
   .length-options {
@@ -362,6 +366,10 @@
   .length-option[data-val="2km"].selected  { background: rgb(96,165,250);  border-color: rgb(96,165,250); }
   .length-option[data-val="5km"].selected  { background: rgb(248,113,113); border-color: rgb(248,113,113); }
   .length-option[data-val="tauko"].selected  { background: rgb(133, 73, 168); border-color: rgb(148, 82, 192); }
+  .length-options.hali { grid-template-columns: 1fr 1fr; }
+  .length-options.hali .length-option[data-val="-"] { grid-column: span 2; }
+  .length-option[data-val="Hali 1"].selected { background: rgb(45, 112, 212);  border-color: rgb(45, 112, 212); }
+  .length-option[data-val="Hali 2"].selected { background: rgb(244, 114, 114); border-color: rgb(244, 114, 114); }
 
   /* ── SUB-ROWS ── */
   .subrow td {
@@ -449,6 +457,71 @@
     opacity: 0.4;
     text-decoration: line-through;
   }
+
+  /* ── VARATTU (reserved by a booking in an earlier row) ── */
+  .reserve-tag {
+    display: inline-block;
+    margin-left: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--yellow);
+    border: 1px solid rgba(251,191,36,0.4);
+    border-radius: 4px;
+    padding: 2px 5px;
+    vertical-align: middle;
+  }
+  .subrow.is-taken .pax-display {
+    cursor: not-allowed;
+    color: var(--text-dimmer);
+    border-style: dashed;
+    background: repeating-linear-gradient(45deg, var(--surface2), var(--surface2) 6px, #151922 6px, #151922 12px);
+  }
+  .subrow.is-taken .more-input { opacity: 0.4; cursor: not-allowed; }
+  .taken-mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px;
+    color: var(--text-dimmer);
+    font-size: 15px;
+  }
+
+  /* Reserve stepper in PAX popup */
+  .reserve-field {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    margin-bottom: 16px;
+  }
+  .reserve-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .stepper { display: flex; align-items: center; gap: 6px; }
+  .step-btn {
+    width: 34px; height: 34px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .step-btn:hover:not(:disabled) { border-color: var(--border-bright); }
+  .step-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .step-val {
+    min-width: 28px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .reserve-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dimmer);
+    margin-top: 8px;
+    line-height: 1.6;
+    min-height: 1em;
+  }
+  .reserve-hint.active { color: var(--yellow); }
 
   /* ── ADD TIMESLOT ROW ── */
   .add-timeslot-row td {
@@ -779,6 +852,8 @@ const db = getFirestore(app);
 const MG_TEMPLATE_TIMES = [
   "10:00", "10:20", "10:40", "11:00", "11:20", "11:40", "13:00", "13:20", "13:40", "14:00", "14:20", "15:00", "15:20", "15:40",
 ];
+// Every template time is created once per hali (10:00 Hali 1, 10:00 Hali 2, ...).
+const MG_HALI_OPTIONS = ["Hali 1", "Hali 2"];
 
 // ── STATE ─────────────────────────────────────────────────
 // IMPORTANT: each timeslot is now its own Firestore document, and each row
@@ -1006,12 +1081,15 @@ async function ensureDaySeeded(panel) {
   if (!snap.empty) return;
   if (panel !== 'mg') return;
 
+  // Fixed document IDs: if two people open a brand-new day at the same moment,
+  // both write the same documents instead of creating a doubled schedule.
   const batch = writeBatch(db);
-  MG_TEMPLATE_TIMES.forEach((t, i) => {
-    const tsRef = doc(tsCollection(panel));
-    batch.set(tsRef, { time: t, length: '' });
-    const rowRef = doc(rowsCollection(panel, tsRef.id));
-    batch.set(rowRef, { pax: [0,0,0,0], more: '', order: Date.now() + i });
+  MG_TEMPLATE_TIMES.forEach(t => {
+    MG_HALI_OPTIONS.forEach((hali, h) => {
+      const tsid = 'tpl_' + t.replace(':', '') + '_h' + (h + 1);
+      batch.set(tsDocRef(panel, tsid), { time: t, length: hali });
+      batch.set(rowDocRef(panel, tsid, tsid + '_r1'), { pax: [0,0,0,0], more: '', order: 0 });
+    });
   });
   await batch.commit();
 }
@@ -1048,7 +1126,7 @@ function attachPanelListeners(panel) {
               delete tsState.rows[rowid];
             } else {
               const rd = rc.doc.data();
-              tsState.rows[rowid] = { id: rowid, pax: rd.pax || [0,0,0,0], more: rd.more || '', order: rd.order || 0, done: !!rd.done };
+              tsState.rows[rowid] = { id: rowid, pax: rd.pax || [0,0,0,0], more: rd.more || '', order: rd.order || 0, done: !!rd.done, reserve: Math.max(0, parseInt(rd.reserve) || 0) };
             }
           });
           renderPanel(panel);
@@ -1073,6 +1151,12 @@ function attachPanelListeners(panel) {
 async function writeRowField(panel, tsid, rowid, field, value) {
   setSyncState('saving');
   try { await updateDoc(rowDocRef(panel, tsid, rowid), { [field]: value }); }
+  finally { setSyncState('live'); }
+}
+
+async function writeRowFields(panel, tsid, rowid, fields) {
+  setSyncState('saving');
+  try { await updateDoc(rowDocRef(panel, tsid, rowid), fields); }
   finally { setSyncState('live'); }
 }
 
@@ -1167,8 +1251,68 @@ function structureSig(panel) {
     Object.values(state[panel].timeslots)
       .sort((a, b) => a.id.localeCompare(b.id))
       .map(ts => [ts.id, ts.time, ts.length,
-        Object.values(ts.rows).sort((a, b) => a.id.localeCompare(b.id)).map(r => [r.id, r.pax, r.done, r.order])])
+        Object.values(ts.rows).sort((a, b) => a.id.localeCompare(b.id)).map(r => [r.id, r.pax, r.done, r.order, r.reserve])])
   );
+}
+
+// ── ORDERING + RESERVATIONS ──────────────────────────────
+// Timeslots: by time, then by length/hali (so Hali 1 comes before Hali 2), then id.
+function sortedTimeslots(panel) {
+  return Object.values(state[panel].timeslots).sort((a, b) =>
+    a.time.localeCompare(b.time) || (a.length || '').localeCompare(b.length || '') || a.id.localeCompare(b.id));
+}
+function sortedRows(ts) {
+  return Object.values(ts.rows).sort((a, b) => (a.order - b.order) || a.id.localeCompare(b.id));
+}
+const rowKey = (tsid, rowid) => tsid + '/' + rowid;
+
+// Every row of the day in the order it appears on screen.
+function orderedRows(panel) {
+  const out = [];
+  sortedTimeslots(panel).forEach(ts => sortedRows(ts).forEach((row, i) => out.push({ ts, row, slotNo: i + 1 })));
+  return out;
+}
+
+// "Varaa seuraava slotti": a row with reserve = N takes the next N rows on
+// screen (continuing into the next time if needed). Only the booking row
+// stores anything — the taken rows themselves are never written to, so
+// setting the number back to 0 frees them instantly.
+// Returns { "tsid/rowid": { srcKey, srcTime } } for every taken row.
+function computeReservations(panel) {
+  const list = orderedRows(panel);
+  const taken = {};
+  list.forEach(({ ts, row }, i) => {
+    const key = rowKey(ts.id, row.id);
+    if (taken[key] || !row.reserve) return;
+    for (let k = 1; k <= row.reserve && i + k < list.length; k++) {
+      const t = list[i + k];
+      taken[rowKey(t.ts.id, t.row.id)] = { srcKey: key, srcTime: ts.time };
+    }
+  });
+  return taken;
+}
+
+function isRowEmpty(row) {
+  return row.pax.every(v => v === 0) && !row.more && !row.done && !row.reserve;
+}
+
+// How many of the following rows this booking may take: it can extend over
+// empty rows (or rows it already holds) and stops at the first row in use,
+// so a reservation can never hide someone else's booking.
+function reserveInfo(panel, tsid, rowid) {
+  const list = orderedRows(panel);
+  const taken = computeReservations(panel);
+  const srcKey = rowKey(tsid, rowid);
+  const idx = list.findIndex(e => rowKey(e.ts.id, e.row.id) === srcKey);
+  const targets = [];
+  for (let j = idx + 1; idx >= 0 && j < list.length; j++) {
+    const { ts, row, slotNo } = list[j];
+    const t = taken[rowKey(ts.id, row.id)];
+    const mine = t && t.srcKey === srcKey;
+    if (!mine && (t || !isRowEmpty(row))) break;
+    targets.push(`${ts.time}${ts.length ? ' ' + ts.length : ''} · slotti ${slotNo}`);
+  }
+  return { hasNext: idx >= 0 && idx < list.length - 1, cap: targets.length, targets };
 }
 
 function isTypingIn(container) {
@@ -1207,15 +1351,16 @@ function renderPanel(panel) {
 
   pendingRender[panel] = false;
   lastSig[panel] = sig;
-  const sorted = Object.values(state[panel].timeslots).sort((a, b) => a.time.localeCompare(b.time));
+  const sorted = sortedTimeslots(panel);
   const isRides = panel === 'rides';
+  const taken = computeReservations(panel);
 
   let html = `
     <table class="schedule-table">
       <thead>
         <tr>
           <th class="col-time">Aika</th>
-          <th class="col-length">Pituus</th>
+          <th class="col-length">${isRides ? 'Pituus' : 'Hali'}</th>
           <th class="col-pax">PAX</th>
           <th class="col-more">Lisätietoa</th>
           ${isRides ? '<th class="col-done">Ajettu</th>' : '<th style="width:30px"></th>'}
@@ -1229,7 +1374,7 @@ function renderPanel(panel) {
   }
 
   sorted.forEach((ts, idx) => {
-    const rows = Object.values(ts.rows).sort((a, b) => a.order - b.order);
+    const rows = sortedRows(ts);
     const lenVal = ts.length || '';
     const colorClass = lengthColorClass(lenVal);
     const badgeLabel = lenVal && lenVal !== '-' ? lenVal : '<span style="opacity:0.35">—</span>';
@@ -1253,6 +1398,21 @@ function renderPanel(panel) {
       html += `<tr class="subrow ${colorClass}"><td class="pax-cell"><span class="pax-display empty">—</span></td><td><input class="more-input" placeholder="..." value="" disabled></td><td></td></tr>`;
     } else {
       rows.forEach(row => {
+        const tk = taken[rowKey(ts.id, row.id)];
+        if (tk) {
+          // Held by a larger booking from an earlier row: blanked out, not editable.
+          html += `<tr class="subrow ${colorClass} is-taken" data-tsid="${ts.id}" data-rowid="${row.id}">
+            <td class="pax-cell">
+              <span class="pax-display" title="Varattu ${tk.srcTime} varauksen jatkoksi">varattu · ${tk.srcTime}</span>
+            </td>
+            <td>
+              <input class="more-input" placeholder="" value="${esc(row.more || '')}" disabled
+                data-tsid="${ts.id}" data-rowid="${row.id}">
+            </td>
+            ${isRides ? '<td class="done-cell"><span class="taken-mark" title="Varattu">↑</span></td>' : ''}
+          </tr>`;
+          return;
+        }
         const paxStr = paxDisplay(row.pax);
         const isEmpty = row.pax.every(v => v === 0);
         const doneCell = isRides
@@ -1266,7 +1426,7 @@ function renderPanel(panel) {
             <span class="pax-display ${isEmpty ? 'empty' : ''}"
               data-action="edit-pax" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">
               ${isEmpty ? '·+·+·+·' : paxStr}
-            </span>
+            </span>${row.reserve ? `<span class="reserve-tag" title="Varaa myös seuraavat ${row.reserve} slottia">+${row.reserve}</span>` : ''}
           </td>
           <td>
             <input class="more-input" placeholder="..." enterkeyhint="done" autocomplete="off"
@@ -1355,6 +1515,8 @@ function lengthColorClass(val) {
   if (val === '2km')  return 'ts-color-2km';
   if (val === '5km')  return 'ts-color-5km';
   if (val === 'tauko')  return 'ts-color-tauko';
+  if (val === 'Hali 1') return 'ts-color-hali1';
+  if (val === 'Hali 2') return 'ts-color-hali2';
   return '';
 }
 
@@ -1469,14 +1631,17 @@ function openEditTimeslotPopup(panel, tsid) {
     if (!currentTs) { closeOverlay(); return; }
     const list = document.getElementById('edit-rows-list');
     if (!list) return;
-    const rows = Object.values(currentTs.rows).sort((a, b) => a.order - b.order);
+    const rows = sortedRows(currentTs);
     if (rows.length === 0) {
       list.innerHTML = '<div style="color:var(--text-dimmer);font-family:var(--mono);font-size:11px;padding:4px 0">Ei slotteja</div>';
       return;
     }
+    const taken = computeReservations(panel);
     list.innerHTML = rows.map((r, i) => `
       <div class="slot-row-item">
-        <span>Slotti ${i + 1} <span style="color:var(--text-dimmer)">${paxDisplay(r.pax)}</span></span>
+        <span>Slotti ${i + 1} <span style="color:var(--text-dimmer)">${
+          taken[rowKey(tsid, r.id)] ? 'varattu · ' + taken[rowKey(tsid, r.id)].srcTime : paxDisplay(r.pax)
+        }</span></span>
         <button class="slot-row-del" data-rowid="${r.id}">✕</button>
       </div>
     `).join('');
@@ -1515,6 +1680,21 @@ function openPaxPopup(panel, tsid, rowid) {
   const isMg = panel === 'mg';
   const accentClass = isMg ? 'mg' : '';
   const pax = [...(row.pax || [0,0,0,0])];
+  const info = reserveInfo(panel, tsid, rowid);
+  let reserve = Math.min(row.reserve || 0, info.cap);
+
+  const reserveHtml = info.hasNext ? `
+    <div class="reserve-field">
+      <div class="reserve-head">
+        <span class="popup-label" style="margin:0">Varaa seuraava slotti</span>
+        <div class="stepper">
+          <button class="step-btn" id="res-minus" type="button">−</button>
+          <span class="step-val" id="res-val">${reserve}</span>
+          <button class="step-btn" id="res-plus" type="button">+</button>
+        </div>
+      </div>
+      <div class="reserve-hint" id="res-hint"></div>
+    </div>` : '';
 
   openOverlay(`
     <div class="popup-title">PAX</div>
@@ -1537,6 +1717,7 @@ function openPaxPopup(panel, tsid, rowid) {
       </div>
     </div>
     <div class="pax-total">Total: <span id="pax-total-val">${pax.reduce((a,b)=>a+b,0)}</span></div>
+    ${reserveHtml}
     <div class="popup-actions">
       <button class="btn btn-secondary" id="popup-cancel">Peruuta</button>
       <button class="btn btn-primary ${accentClass}" id="popup-confirm">Tallenna</button>
@@ -1552,12 +1733,33 @@ function openPaxPopup(panel, tsid, rowid) {
     document.getElementById('pax-'+i).addEventListener('input', updateTotal);
   });
 
+  function updateReserve() {
+    if (!info.hasNext) return;
+    document.getElementById('res-val').textContent = reserve;
+    document.getElementById('res-minus').disabled = reserve <= 0;
+    document.getElementById('res-plus').disabled = reserve >= info.cap;
+    const hint = document.getElementById('res-hint');
+    hint.classList.toggle('active', reserve > 0);
+    if (info.cap === 0) hint.textContent = 'Seuraava slotti on jo käytössä.';
+    else if (reserve > 0) hint.innerHTML = 'Varataan: ' + info.targets.slice(0, reserve).map(esc).join('<br>');
+    else hint.textContent = '';
+  }
+  if (info.hasNext) {
+    document.getElementById('res-minus').addEventListener('click', () => { reserve = Math.max(0, reserve - 1); updateReserve(); });
+    document.getElementById('res-plus').addEventListener('click', () => { reserve = Math.min(info.cap, reserve + 1); updateReserve(); });
+    updateReserve();
+  }
+
   document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
 
   document.getElementById('popup-confirm').addEventListener('click', async () => {
     const newPax = [0,1,2,3].map(i => parseInt(document.getElementById('pax-'+i).value) || 0);
     closeOverlay();
-    await writeRowField(panel, tsid, rowid, 'pax', newPax);
+    const fields = { pax: newPax };
+    // Re-check against live data in case someone filled a row while the popup was open.
+    const finalReserve = Math.min(reserve, reserveInfo(panel, tsid, rowid).cap);
+    if (finalReserve !== (row.reserve || 0)) fields.reserve = finalReserve;
+    await writeRowFields(panel, tsid, rowid, fields);
   });
 
   setTimeout(() => document.getElementById('pax-0').select(), 50);
@@ -1568,14 +1770,15 @@ function openLengthPopup(panel, tsid) {
   const ts = state[panel].timeslots[tsid];
   if (!ts) return;
   const current = ts.length || '';
-  const options = ['-', '500m', '1km', '2km', '5km', 'tauko'];
+  const isMg = panel === 'mg';
+  const options = isMg ? ['-', ...MG_HALI_OPTIONS] : ['-', '500m', '1km', '2km', '5km', 'tauko'];
 
   openOverlay(`
-    <div class="popup-title">Pituus — ${ts.time}</div>
-    <div class="length-options">
+    <div class="popup-title">${isMg ? 'Hali' : 'Pituus'} — ${ts.time}</div>
+    <div class="length-options ${isMg ? 'hali' : ''}">
       ${options.map(v => `
         <div class="length-option ${current === v || (v === '-' && !current) ? 'selected' : ''}" data-val="${v}">
-          ${v === '-' ? '— ei pituutta' : v}
+          ${v === '-' ? (isMg ? '— tyhjä' : '— ei pituutta') : v}
         </div>
       `).join('')}
     </div>
