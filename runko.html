@@ -258,7 +258,14 @@
 
   .col-time { width: 80px; }
   .col-length { width: 80px; }
-  .col-pax { width: 130px; }
+  .col-pax { width: 130px; white-space: nowrap; }
+  .pax-tally {
+    margin-left: 6px;
+    color: var(--text-dimmer);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    font-size: 11px;
+  }
   .col-more { width: auto; }
 
   /* ── TIMESLOT ROWS ── */
@@ -380,7 +387,8 @@
   .subrow:first-of-type td { padding-top: 6px; }
   .subrow:last-of-type td { padding-bottom: 8px; }
 
-  .pax-cell {}
+  .pax-cell {
+  }
   .pax-display {
     font-family: var(--mono);
     font-size: 13px;
@@ -394,6 +402,7 @@
     white-space: nowrap;
     min-width: 100px;
     display: inline-block;
+    
   }
   .pax-display:hover { border-color: var(--border-bright); }
   .pax-display.empty { color: var(--text-dimmer); }
@@ -522,6 +531,17 @@
     min-height: 1em;
   }
   .reserve-hint.active { color: var(--yellow); }
+
+  /* Meet & Greet: single PAX number with − / + */
+  .pax-single {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .pax-single .step-btn { width: 48px; height: 48px; font-size: 22px; }
+  .pax-single .num-input { width: 110px; font-size: 26px; padding: 8px; }
 
   /* ── ADD TIMESLOT ROW ── */
   .add-timeslot-row td {
@@ -1364,7 +1384,7 @@ function renderPanel(panel) {
         <tr>
           <th class="col-time">Aika</th>
           <th class="col-length">${isRides ? 'Pituus' : 'Hali'}</th>
-          <th class="col-pax">PAX</th>
+          <th class="col-pax">PAX <span class="pax-tally">(${dayTally(panel, taken)})</span></th>
           <th class="col-more">Lisätietoa</th>
           ${isRides ? '<th class="col-done">Ajettu</th>' : '<th style="width:30px"></th>'}
         </tr>
@@ -1416,7 +1436,8 @@ function renderPanel(panel) {
           </tr>`;
           return;
         }
-        const paxStr = paxDisplay(row.pax);
+        // M&G shows one total number; rides keep the a+l+ia+il breakdown.
+        const paxStr = isRides ? paxDisplay(row.pax) : paxTotal(row.pax);
         const isEmpty = row.pax.every(v => v === 0);
         const doneCell = isRides
           ? `<td class="done-cell">
@@ -1428,7 +1449,7 @@ function renderPanel(panel) {
           <td class="pax-cell">
             <span class="pax-display ${isEmpty ? 'empty' : ''}"
               data-action="edit-pax" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">
-              ${isEmpty ? '·+·+·+·' : paxStr}
+              ${isEmpty ? (isRides ? '·+·+·+·' : '·') : paxStr}
             </span>${row.reserve ? `<span class="reserve-tag" title="Varaa myös seuraavat ${row.reserve} slottia">+${row.reserve}</span>` : ''}
           </td>
           <td>
@@ -1510,6 +1531,22 @@ function esc(str) {
 
 function paxDisplay(pax) {
   return (pax || [0,0,0,0]).join('+');
+}
+
+// Whole-day tally for the column header. Rides: per category (a+l+ia+il),
+// M&G: one total. Rows held by a "varaa seuraava slotti" booking are skipped.
+function dayTally(panel, taken) {
+  const sum = [0,0,0,0];
+  Object.values(state[panel].timeslots).forEach(ts =>
+    Object.values(ts.rows).forEach(r => {
+      if (taken[rowKey(ts.id, r.id)]) return;
+      (r.pax || []).forEach((v, i) => { if (i < 4) sum[i] += v || 0; });
+    }));
+  return panel === 'rides' ? sum.join('+') : paxTotal(sum);
+}
+
+function paxTotal(pax) {
+  return (pax || [0,0,0,0]).reduce((a, b) => a + (b || 0), 0);
 }
 
 function lengthColorClass(val) {
@@ -1643,7 +1680,8 @@ function openEditTimeslotPopup(panel, tsid) {
     list.innerHTML = rows.map((r, i) => `
       <div class="slot-row-item">
         <span>Slotti ${i + 1} <span style="color:var(--text-dimmer)">${
-          taken[rowKey(tsid, r.id)] ? 'varattu · ' + taken[rowKey(tsid, r.id)].srcTime : paxDisplay(r.pax)
+          taken[rowKey(tsid, r.id)] ? 'varattu · ' + taken[rowKey(tsid, r.id)].srcTime
+            : (isMg ? paxTotal(r.pax) : paxDisplay(r.pax))
         }</span></span>
         <button class="slot-row-del" data-rowid="${r.id}">✕</button>
       </div>
@@ -1699,8 +1737,13 @@ function openPaxPopup(panel, tsid, rowid) {
       <div class="reserve-hint" id="res-hint"></div>
     </div>` : '';
 
-  openOverlay(`
-    <div class="popup-title">PAX</div>
+  // M&G: one number. Saved as [n,0,0,0] so the data format stays the same as rides.
+  const paxFieldsHtml = isMg ? `
+    <div class="pax-single">
+      <button class="step-btn" id="pax-minus" type="button">−</button>
+      <input class="num-input" id="pax-n" type="number" min="0" inputmode="numeric" value="${paxTotal(pax)}">
+      <button class="step-btn" id="pax-plus" type="button">+</button>
+    </div>` : `
     <div class="pax-grid">
       <div class="popup-field">
         <label class="popup-label">Aikuiset</label>
@@ -1719,7 +1762,11 @@ function openPaxPopup(panel, tsid, rowid) {
         <input class="num-input" id="pax-3" type="number" min="0" value="${pax[3]}">
       </div>
     </div>
-    <div class="pax-total">Total: <span id="pax-total-val">${pax.reduce((a,b)=>a+b,0)}</span></div>
+    <div class="pax-total">Total: <span id="pax-total-val">${pax.reduce((a,b)=>a+b,0)}</span></div>`;
+
+  openOverlay(`
+    <div class="popup-title">PAX</div>
+    ${paxFieldsHtml}
     ${reserveHtml}
     <div class="popup-actions">
       <button class="btn btn-secondary" id="popup-cancel">Peruuta</button>
@@ -1732,9 +1779,17 @@ function openPaxPopup(panel, tsid, rowid) {
     document.getElementById('pax-total-val').textContent = total;
   }
 
-  [0,1,2,3].forEach(i => {
-    document.getElementById('pax-'+i).addEventListener('input', updateTotal);
-  });
+  const readSingle = () => Math.max(0, parseInt(document.getElementById('pax-n').value) || 0);
+  if (isMg) {
+    const n = document.getElementById('pax-n');
+    document.getElementById('pax-minus').addEventListener('click', () => { n.value = Math.max(0, readSingle() - 1); });
+    document.getElementById('pax-plus').addEventListener('click', () => { n.value = readSingle() + 1; });
+    n.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('popup-confirm').click(); });
+  } else {
+    [0,1,2,3].forEach(i => {
+      document.getElementById('pax-'+i).addEventListener('input', updateTotal);
+    });
+  }
 
   function updateReserve() {
     if (!info.hasNext) return;
@@ -1756,7 +1811,9 @@ function openPaxPopup(panel, tsid, rowid) {
   document.getElementById('popup-cancel').addEventListener('click', closeOverlay);
 
   document.getElementById('popup-confirm').addEventListener('click', async () => {
-    const newPax = [0,1,2,3].map(i => parseInt(document.getElementById('pax-'+i).value) || 0);
+    const newPax = isMg
+      ? [readSingle(), 0, 0, 0]
+      : [0,1,2,3].map(i => parseInt(document.getElementById('pax-'+i).value) || 0);
     closeOverlay();
     const fields = { pax: newPax };
     // Re-check against live data in case someone filled a row while the popup was open.
@@ -1765,7 +1822,9 @@ function openPaxPopup(panel, tsid, rowid) {
     await writeRowFields(panel, tsid, rowid, fields);
   });
 
-  setTimeout(() => document.getElementById('pax-0').select(), 50);
+  // Rides: jump straight into typing. M&G: don't pop the keyboard — +/− first, tap the number to type.
+  if (!isMg) setTimeout(() => document.getElementById('pax-0').select(), 50);
+  else document.getElementById('pax-n').addEventListener('focus', e => e.target.select());
 }
 
 // ── LENGTH PICKER POPUP ───────────────────────────────────
