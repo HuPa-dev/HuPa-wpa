@@ -333,9 +333,9 @@
   .ts-color-tauko td { background: rgba(194, 113, 248, 0.08); }
   .ts-color-tauko td:first-child { border-left: 3px solid rgba(172, 113, 248, 0.55); }
   .ts-color-hali1 td { background: rgba(45, 212, 191, 0.08); }
-  .ts-color-hali1 td:first-child { border-left: 3px solid rgba(45, 70, 212, 0.6); }
+  .ts-color-hali1 td:first-child { border-left: 3px solid rgba(45, 212, 191, 0.6); }
   .ts-color-hali2 td { background: rgba(244, 114, 182, 0.08); }
-  .ts-color-hali2 td:first-child { border-left: 3px solid rgba(244, 114, 114, 0.6); }
+  .ts-color-hali2 td:first-child { border-left: 3px solid rgba(244, 114, 182, 0.6); }
 
   /* Length picker popup */
   .length-options {
@@ -368,8 +368,8 @@
   .length-option[data-val="tauko"].selected  { background: rgb(133, 73, 168); border-color: rgb(148, 82, 192); }
   .length-options.hali { grid-template-columns: 1fr 1fr; }
   .length-options.hali .length-option[data-val="-"] { grid-column: span 2; }
-  .length-option[data-val="Hali 1"].selected { background: rgb(45, 112, 212);  border-color: rgb(45, 112, 212); }
-  .length-option[data-val="Hali 2"].selected { background: rgb(244, 114, 114); border-color: rgb(244, 114, 114); }
+  .length-option[data-val="Hali 1"].selected { background: rgb(45,212,191);  border-color: rgb(45,212,191); }
+  .length-option[data-val="Hali 2"].selected { background: rgb(244,114,182); border-color: rgb(244,114,182); }
 
   /* ── SUB-ROWS ── */
   .subrow td {
@@ -1286,6 +1286,7 @@ function computeReservations(panel) {
     if (taken[key] || !row.reserve) return;
     for (let k = 1; k <= row.reserve && i + k < list.length; k++) {
       const t = list[i + k];
+      if (t.ts.id !== ts.id) break; // never spills into the next time
       taken[rowKey(t.ts.id, t.row.id)] = { srcKey: key, srcTime: ts.time };
     }
   });
@@ -1307,12 +1308,14 @@ function reserveInfo(panel, tsid, rowid) {
   const targets = [];
   for (let j = idx + 1; idx >= 0 && j < list.length; j++) {
     const { ts, row, slotNo } = list[j];
+    if (ts.id !== tsid) break; // only slots within the same time
     const t = taken[rowKey(ts.id, row.id)];
     const mine = t && t.srcKey === srcKey;
     if (!mine && (t || !isRowEmpty(row))) break;
     targets.push(`${ts.time}${ts.length ? ' ' + ts.length : ''} · slotti ${slotNo}`);
   }
-  return { hasNext: idx >= 0 && idx < list.length - 1, cap: targets.length, targets };
+  const hasNext = idx >= 0 && idx < list.length - 1 && list[idx + 1].ts.id === tsid;
+  return { hasNext, cap: targets.length, targets };
 }
 
 function isTypingIn(container) {
