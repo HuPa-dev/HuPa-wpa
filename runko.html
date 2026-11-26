@@ -1426,7 +1426,7 @@ function renderPanel(panel) {
           // Held by a larger booking from an earlier row: blanked out, not editable.
           html += `<tr class="subrow ${colorClass} is-taken" data-tsid="${ts.id}" data-rowid="${row.id}">
             <td class="pax-cell">
-              <span class="pax-display" title="Varattu ${tk.srcTime} varauksen jatkoksi">varattu · ${tk.srcTime}</span>
+              <span class="pax-display" title="Varattu ↑">varattu · ↑ </span>
             </td>
             <td>
               <input class="more-input" placeholder="" value="${esc(row.more || '')}" disabled
@@ -1450,7 +1450,7 @@ function renderPanel(panel) {
             <span class="pax-display ${isEmpty ? 'empty' : ''}"
               data-action="edit-pax" data-panel="${panel}" data-tsid="${ts.id}" data-rowid="${row.id}">
               ${isEmpty ? (isRides ? '·+·+·+·' : '·') : paxStr}
-            </span>${row.reserve ? `<span class="reserve-tag" title="Varaa myös seuraavat ${row.reserve} slottia">+${row.reserve}</span>` : ''}
+            
           </td>
           <td>
             <input class="more-input" placeholder="..." enterkeyhint="done" autocomplete="off"
