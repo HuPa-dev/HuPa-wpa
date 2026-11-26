@@ -531,6 +531,11 @@
     min-height: 1em;
   }
   .reserve-hint.active { color: var(--yellow); }
+  .reserve-next {
+    display: inline-block;
+    color: var(--red);
+    font-weight: 600;
+  }
 
   /* Meet & Greet: single PAX number with − / + */
   .pax-single {
@@ -1306,7 +1311,6 @@ function computeReservations(panel) {
     if (taken[key] || !row.reserve) return;
     for (let k = 1; k <= row.reserve && i + k < list.length; k++) {
       const t = list[i + k];
-      if (t.ts.id !== ts.id) break; // never spills into the next time
       taken[rowKey(t.ts.id, t.row.id)] = { srcKey: key, srcTime: ts.time };
     }
   });
@@ -1328,13 +1332,15 @@ function reserveInfo(panel, tsid, rowid) {
   const targets = [];
   for (let j = idx + 1; idx >= 0 && j < list.length; j++) {
     const { ts, row, slotNo } = list[j];
-    if (ts.id !== tsid) break; // only slots within the same time
     const t = taken[rowKey(ts.id, row.id)];
     const mine = t && t.srcKey === srcKey;
     if (!mine && (t || !isRowEmpty(row))) break;
-    targets.push(`${ts.time}${ts.length ? ' ' + ts.length : ''} · slotti ${slotNo}`);
+    targets.push({
+      label: `${ts.time}${ts.length ? ' ' + ts.length : ''} · slotti ${slotNo}`,
+      otherTime: ts.id !== tsid, // spills over into a later time
+    });
   }
-  const hasNext = idx >= 0 && idx < list.length - 1 && list[idx + 1].ts.id === tsid;
+  const hasNext = idx >= 0 && idx < list.length - 1;
   return { hasNext, cap: targets.length, targets };
 }
 
@@ -1799,7 +1805,12 @@ function openPaxPopup(panel, tsid, rowid) {
     const hint = document.getElementById('res-hint');
     hint.classList.toggle('active', reserve > 0);
     if (info.cap === 0) hint.textContent = 'Seuraava slotti on jo käytössä.';
-    else if (reserve > 0) hint.innerHTML = 'Varataan: ' + info.targets.slice(0, reserve).map(esc).join('<br>');
+    else if (reserve > 0) {
+      const picked = info.targets.slice(0, reserve);
+      hint.innerHTML = 'Varataan:<br>' + picked.map(t => t.otherTime
+        ? `<span class="reserve-next">→ ${esc(t.label)} (seuraava aika)</span>`
+        : esc(t.label)).join('<br>');
+    }
     else hint.textContent = '';
   }
   if (info.hasNext) {
