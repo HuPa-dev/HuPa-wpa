@@ -487,6 +487,8 @@
     background: repeating-linear-gradient(45deg, var(--surface2), var(--surface2) 6px, #151922 6px, #151922 12px);
   }
   .subrow.is-taken .more-input { opacity: 0.4; cursor: not-allowed; }
+  /* Booking row marked "ajettu" → its reserved rows follow */
+  .subrow.is-taken.is-done .taken-mark { opacity: 0.4; }
   .taken-mark {
     display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px;
@@ -1311,7 +1313,7 @@ function computeReservations(panel) {
     if (taken[key] || !row.reserve) return;
     for (let k = 1; k <= row.reserve && i + k < list.length; k++) {
       const t = list[i + k];
-      taken[rowKey(t.ts.id, t.row.id)] = { srcKey: key, srcTime: ts.time };
+      taken[rowKey(t.ts.id, t.row.id)] = { srcKey: key, srcTime: ts.time, srcDone: !!row.done };
     }
   });
   return taken;
@@ -1430,7 +1432,7 @@ function renderPanel(panel) {
         const tk = taken[rowKey(ts.id, row.id)];
         if (tk) {
           // Held by a larger booking from an earlier row: blanked out, not editable.
-          html += `<tr class="subrow ${colorClass} is-taken" data-tsid="${ts.id}" data-rowid="${row.id}">
+          html += `<tr class="subrow ${colorClass} is-taken ${isRides && tk.srcDone ? 'is-done' : ''}" data-tsid="${ts.id}" data-rowid="${row.id}">
             <td class="pax-cell">
               <span class="pax-display" title="Varattu ↑">varattu · ↑ </span>
             </td>
